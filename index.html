@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Acer IA · Laboratorio</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-mark">A</div>
+      <div class="brand-text"><strong>ACER <span>IA</span></strong><small>Laboratorio privado</small></div>
+      <div class="local-status"><span class="status-dot"></span> GitHub Pages</div>
+    </header>
+    <section class="login-shell" id="connection">
+  <p class="eyebrow">ACCESO A TU SERVIDOR</p>
+  <h1>Acer IA</h1>
+  <p>Finanzas y creatividad en una sola web. El cerebro funciona en tu Acer, no en GitHub.</p>
+  <form id="login-form" class="login-form">
+    <label for="server-url">Dirección privada del servidor HTTPS</label>
+    <input id="server-url" type="url" required placeholder="https://acer.tu-red.ts.net" autocomplete="url">
+    <label for="login-user">Usuario</label>
+    <input id="login-user" type="text" required value="hugo" autocomplete="username">
+    <label for="login-pass">Contraseña de Acer IA</label>
+    <input id="login-pass" type="password" required autocomplete="current-password">
+    <button id="login-button" type="submit">Conectarme a mi Acer</button>
+  </form>
+  <p class="login-note">La contraseña no se publica en GitHub ni se guarda en el navegador. El servidor necesita estar encendido y Tailscale Funnel activo.</p>
+  <div id="login-error" class="error" role="alert" hidden></div>
+</section>
+    <main class="workspace" id="workspace" hidden>
+      <div class="headline"><p class="eyebrow">TU ESTACIÓN DE INTELIGENCIA</p><h1>Un lugar para analizar<br>y crear.</h1><p>Dos formas de pensar, una sola conversación a la vez.</p></div>
+      <nav class="tabs" aria-label="Tipo de consulta">
+        <button class="tab active" id="tab-finance" data-mode="finance" aria-pressed="true">📈 &nbsp; Finanzas</button>
+        <button class="tab" id="tab-creative" data-mode="creative" aria-pressed="false">✦ &nbsp; Generativa</button>
+      </nav>
+      <section id="finance-market" class="market-panel" aria-label="Referencias de mercado">
+        <div class="market-title"><span>Referencias cripto</span><span id="price-time">Conectando…</span></div>
+        <div class="market-prices"><div><span>BTC / USD</span><strong id="btc-price">—</strong></div><div><span>ETH / USD</span><strong id="eth-price">—</strong></div><button class="refresh" id="refresh-prices" title="Actualizar cotizaciones" aria-label="Actualizar cotizaciones">↻</button></div>
+        <div class="source">Fuente: <a href="https://www.kraken.com/prices" target="_blank" rel="noopener noreferrer">Kraken</a> · Precios puntuales, no una recomendación de inversión.</div>
+      </section>
+      <section class="conversation" aria-label="Chat">
+        <div class="conversation-header"><div><strong id="chat-title">Analista financiero</strong><p id="chat-subtitle">Investigación, escenarios y riesgos. Nunca opera con dinero.</p></div><button id="clear-chat" class="secondary-button">Nuevo chat</button></div>
+        <div id="messages" class="messages" role="log" aria-live="polite">
+          <div class="empty-state"><div class="empty-symbol">✳</div><h2>¿Qué analizamos hoy?</h2><p>Podés consultar sobre mercados, estrategias y decisiones de inversión.</p></div>
+        </div>
+        <form id="prompt-form" class="composer"><label class="sr-only" for="prompt">Escribí tu consulta</label><textarea id="prompt" rows="2" maxlength="4000" placeholder="Escribí tu consulta…" required></textarea><div class="composer-footer"><span id="input-hint">Enter envía · Shift+Enter, nueva línea</span><button id="send" type="submit">Enviar <span>↑</span></button></div></form>
+        <div id="error" class="error" role="alert" hidden></div>
+      </section>
+      <footer>100 % análisis · 0 permisos de trading · IA ejecutándose en la Acer · <button class="logout-button" id="logout">Desconectar</button></footer>
+    </main>
+  </div>
+</body>
+</html>

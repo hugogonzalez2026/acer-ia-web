@@ -24,3 +24,4 @@ GitHub Pages aloja **solo la interfaz**. El motor de IA (Ollama/Qwen) y la API e
 - La Acer es **analista**, no ejecutora de operaciones financieras. Cualquier automatización operativa se reserva para la HP Mini.
 
 **Estado:** archivos del frontend subidos. La configuración de GitHub Pages y la instalación/configuración del backend Acer son pasos separados.
+Web Acer IA lista

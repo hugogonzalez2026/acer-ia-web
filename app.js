@@ -248,11 +248,23 @@ async function generateImage(){
   try{
     const resp=await fetch(state.server+"/api/images/jobs",{
       method:"POST",headers:{"Content-Type":"application/json",...apiHeaders()},
-      body:JSON.stringify({prompt:description,size:Number($("image-size").value),steps:Number($("image-steps").value)})
+      body:JSON.stringify({
+        prompt:description,
+        size:Number($("image-size").value),
+        steps:Number($("image-steps").value),
+        preset:$("image-preset").value,
+        sampler:$("image-sampler").value,
+        cfg:Number($("image-cfg").value),
+        seed:$("image-seed").value===""?null:Number($("image-seed").value)
+      })
     });
     const job=await resp.json().catch(()=>({}));
     if(!resp.ok)throw new Error(job.error||"El motor rechazó el trabajo ("+resp.status+")");
     if(typeof job.job_id!=="string")throw new Error("No recibí un identificador del trabajo");
+    if(Number.isInteger(job.seed)){
+      $("image-seed").value=String(job.seed);
+      $("image-last-settings").textContent="Modelo: "+(job.model||"SD 1.5")+" · Semilla: "+job.seed+" · "+(job.sampler||"sampler")+" · CFG "+(job.cfg??"")+" · "+(job.steps??"")+" pasos";
+    }
     $("image-result-status").textContent="Generando en la Acer…";
     imageProgressStage("Solicitud aceptada","Esperando confirmación de la cola de ComfyUI.");
     let completed=false;
@@ -296,6 +308,13 @@ async function generateImage(){
     if(state.server)refreshImageAvailability();
   }
 }
+$("image-preset").addEventListener("change",()=>{
+  const preset=$("image-preset").value;
+  if(preset==="fullbody"||preset==="portrait"||preset==="product"){
+    $("image-size").value="512";
+    $("image-steps").value="20";
+  }
+});
 $("image-generate").addEventListener("click",generateImage);
 $("image-download").addEventListener("click",()=>{
   if(!imageOutputBlob)return;

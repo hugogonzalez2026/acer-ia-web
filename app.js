@@ -1,6 +1,6 @@
 "use strict";
 const $ = (id) => document.getElementById(id);
-const state = {finance: [], creative: [], server: "", username: "", password: ""};
+const state = {finance: [], creative: [], code: [], server: "", username: "", password: ""};
 function apiHeaders(){return {Authorization:"Basic "+btoa(String.fromCharCode(...new TextEncoder().encode(state.username+":"+state.password)))};}
 function sanitizeServer(input){
   const url=new URL(input);
@@ -35,7 +35,7 @@ async function login(event){
 $("login-form").addEventListener("submit",login);
 $("logout").addEventListener("click",()=>{
   if(running&&controller)controller.abort();
-  state.server="";state.username="";state.password="";state.finance=[];state.creative=[];
+  state.server="";state.username="";state.password="";state.finance=[];state.creative=[];state.code=[];
   $("workspace").hidden=true;$("connection").hidden=false;$("login-pass").value="";
   $("login-error").hidden=true;renderMessages();
 });
@@ -47,9 +47,9 @@ function renderMessages(){
   elements.messages.replaceChildren();
   if (!state[mode].length){
     const empty=document.createElement("div"); empty.className="empty-state";
-    const symbol=document.createElement("div"); symbol.className="empty-symbol"; symbol.textContent=mode==="finance"?"✳":"✦";
-    const heading=document.createElement("h2"); heading.textContent=mode==="finance"?"¿Qué analizamos hoy?":"¿Qué creamos hoy?";
-    const intro=document.createElement("p"); intro.textContent=mode==="finance"?"Podés consultar sobre mercados, estrategias y decisiones de inversión.":"Ideas, textos, proyectos, programación y creatividad.";
+    const symbol=document.createElement("div"); symbol.className="empty-symbol"; symbol.textContent=mode==="finance"?"✳":mode==="code"?"⌘":"✦";
+    const heading=document.createElement("h2"); heading.textContent=mode==="finance"?"¿Qué analizamos hoy?":mode==="code"?"¿Qué programamos hoy?":"¿Qué creamos hoy?";
+    const intro=document.createElement("p"); intro.textContent=mode==="finance"?"Podés consultar sobre mercados, estrategias y decisiones de inversión.":mode==="code"?"Describí lo que necesitás y la IA te ayudará a escribir el código.":"Ideas, textos, proyectos, programación y creatividad.";
     empty.append(symbol,heading,intro); elements.messages.append(empty); return;
   }
   for(const message of state[mode]){
@@ -59,18 +59,48 @@ function renderMessages(){
   }
   elements.messages.scrollTop=elements.messages.scrollHeight;
 }
+function generatedCode(){
+  const answers=state.code.filter(message=>message.role==="assistant"&&!message.pending&&message.content);
+  if(!answers.length) return "";
+  const content=answers[answers.length-1].content;
+  const fences=Array.from(content.matchAll(/```[^\r\n]*\r?\n([\s\S]*?)```/g));
+  if(fences.length){
+    fences.sort((a,b)=>b[1].length-a[1].length);
+    return fences[0][1].trim();
+  }
+  return content.trim();
+}
+function updateCodeOutput(){
+  const source=generatedCode();
+  $("code-output").textContent=source||"Pedile abajo un programa y lo vas a ver acá.";
+  $("copy-code").disabled=!source;
+  $("download-code").disabled=!source;
+  $("code-status").textContent=source?source.length.toLocaleString("es-AR")+" caracteres":"Todavía no hay código";
+}
 function selectMode(next){
-  if(running || !["finance","creative"].includes(next)) return;
+  if(running||!["finance","creative","code"].includes(next))return;
   mode=next;
-  for (const item of document.querySelectorAll(".tab")){
-    const active=item.dataset.mode===mode; item.classList.toggle("active",active); item.setAttribute("aria-pressed",String(active));
+  for(const item of document.querySelectorAll(".tab")){
+    const active=item.dataset.mode===mode;
+    item.classList.toggle("active",active);
+    item.setAttribute("aria-pressed",String(active));
   }
   $("finance-market").hidden=mode!=="finance";
-  $("chat-title").textContent=mode==="finance"?"Analista financiero":"IA generativa";
-  $("chat-subtitle").textContent=mode==="finance"?"Investigación, escenarios y riesgos. Nunca opera con dinero.":"Textos, ideas, código y creación libre en tu equipo.";
-  $("prompt").placeholder=mode==="finance"?"Ej.: ¿Qué riesgos tiene comprar BTC hoy?":"Ej.: Escribí un cuento de ciencia ficción…";
-  $("error").hidden=true; renderMessages();
+  $("code-panel").hidden=mode!=="code";
+  const config={
+    finance:{title:"Analista financiero",subtitle:"Investigación, escenarios y riesgos. Nunca opera con dinero.",placeholder:"Ej.: ¿Qué riesgos tiene comprar BTC hoy?"},
+    creative:{title:"IA generativa",subtitle:"Textos, ideas y creación libre en tu equipo.",placeholder:"Ej.: Escribí un cuento de ciencia ficción…"},
+    code:{title:"Asistente de programación",subtitle:"Generá código, revisalo y descargalo. Sin ejecución automática.",placeholder:"Ej.: Creá un programa que analice un CSV de operaciones…"}
+  }[mode];
+  $("chat-title").textContent=config.title;
+  $("chat-subtitle").textContent=config.subtitle;
+  $("prompt").placeholder=config.placeholder;
+  $("prompt").maxLength=mode==="code"?3500:4000;
+  $("error").hidden=true;
+  renderMessages();
+  updateCodeOutput();
 }
+
 async function refreshPrices(){
   $("price-time").textContent="Actualizando…";
   try {
@@ -95,11 +125,18 @@ async function send(event){
   const history=state[mode];
   history.push({role:"user",content:prompt});
   const selectedMode=mode;
-  const toSend=history.slice(-9).map(({role,content})=>({role,content}));
+  const selectedLanguage=$("code-language").value;
+  const toSend=history.slice(-9).map(({role,content},index,array)=>{
+    if(selectedMode==="code"&&role==="user"&&index===array.length-1){
+      return {role,content:"Actuá como asistente de programación. Lenguaje: "+selectedLanguage+
+        ". Escribí código funcional, completo y legible, con un solo bloque de código entre tres acentos graves, seguido de una explicación breve y pruebas recomendadas. No afirmes haberlo ejecutado. Pedido: "+content};
+    }
+    return {role,content};
+  });
   const answer={role:"assistant",content:"",pending:true}; history.push(answer); renderMessages();
   controller=new AbortController();
   try{
-    const response=await fetch(state.server+"/api/chat",{method:"POST",headers:{"Content-Type":"application/json",...apiHeaders()},body:JSON.stringify({mode:selectedMode,messages:toSend}),signal:controller.signal});
+    const response=await fetch(state.server+"/api/chat",{method:"POST",headers:{"Content-Type":"application/json",...apiHeaders()},body:JSON.stringify({mode:selectedMode==="code"?"creative":selectedMode,messages:toSend}),signal:controller.signal});
     if(!response.ok){const info=await response.json().catch(()=>({})); throw new Error(info.error||"No se pudo consultar la IA");}
     const reader=response.body.getReader(), decoder=new TextDecoder(); let buffer="";
     while(true){
@@ -118,11 +155,40 @@ async function send(event){
     answer.content=answer.content||"No pude responder esta vez.";
     $("error").textContent="Error: "+(err.name==="AbortError"?"Consulta cancelada":err.message);
     $("error").hidden=false;
-  }finally{answer.pending=false; running=false; elements.send.disabled=false; controller=null; renderMessages(); elements.input.focus();}
+  }finally{answer.pending=false; running=false; elements.send.disabled=false; controller=null; renderMessages(); updateCodeOutput(); elements.input.focus();}
 }
 for(const tab of document.querySelectorAll(".tab")){tab.addEventListener("click",()=>selectMode(tab.dataset.mode));}
 $("clear-chat").addEventListener("click",()=>{if(!running){state[mode]=[]; renderMessages(); $("error").hidden=true;}});
 $("refresh-prices").addEventListener("click",refreshPrices);
 $("prompt-form").addEventListener("submit",send);
 elements.input.addEventListener("keydown",event=>{if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();$("prompt-form").requestSubmit();}});
+const filenameByLanguage={python:"script.py",javascript:"app.js",html:"pagina.html",css:"estilos.css",bash:"script.sh",sql:"consulta.sql",text:"archivo.txt"};
+$("code-language").addEventListener("change",()=>{
+  const current=$("code-filename").value.trim();
+  if(!current||Object.values(filenameByLanguage).includes(current)){
+    $("code-filename").value=filenameByLanguage[$("code-language").value]||"archivo.txt";
+  }
+});
+$("copy-code").addEventListener("click",async()=>{
+  const source=generatedCode();
+  if(!source)return;
+  try{
+    await navigator.clipboard.writeText(source);
+    $("code-status").textContent="Código copiado";
+  }catch{
+    $("code-status").textContent="No se pudo copiar. Seleccioná el texto manualmente.";
+  }
+});
+$("download-code").addEventListener("click",()=>{
+  const source=generatedCode();if(!source)return;
+  let name=$("code-filename").value.trim().replace(/[^a-zA-Z0-9._-]/g,"_").replace(/^\.+/,"").slice(0,70);
+  if(!name||name==="."||name==="..")name=filenameByLanguage[$("code-language").value]||"codigo.txt";
+  const blob=new Blob([source+"\n"],{type:"text/plain;charset=utf-8"});
+  const href=URL.createObjectURL(blob);
+  const link=document.createElement("a");
+  link.href=href;link.download=name;
+  document.body.appendChild(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(href),1000);
+  $("code-status").textContent="Descargado: "+name;
+});
 selectMode("finance");

@@ -301,6 +301,7 @@ async function generateImage(){
         if(!response.ok)throw new Error("La Acer no devolvió la imagen");
         const blob=await response.blob();
         if(!blob.type.includes("image/png"))throw new Error("El resultado no es una imagen PNG");
+        imageSelectedGalleryFile=null;
         imageOutputBlob=blob;imagePreviewUrl=URL.createObjectURL(blob);
         $("image-preview").src=imagePreviewUrl;
         $("image-preview").hidden=false;
@@ -358,8 +359,58 @@ $("image-download").addEventListener("click",()=>{
 });
 
 let galleryEpoch=0, galleryObjectUrls=[];
+let gallerySelected=new Set(), galleryVisibleFiles=[], galleryDeleteEnabled=false;
+let imageSelectedGalleryFile=null;
+function updateGallerySelection(){
+  const count=gallerySelected.size;
+  $("image-gallery-count").textContent=count+" imagen"+(count===1?" seleccionada":"es seleccionadas");
+  $("image-gallery-delete").disabled=!galleryDeleteEnabled||count===0;
+  $("image-gallery-selectall").checked=galleryVisibleFiles.length>0&&count===galleryVisibleFiles.length;
+  $("image-gallery-selectall").indeterminate=count>0&&count<galleryVisibleFiles.length;
+}
+$("image-gallery-selectall").addEventListener("change",()=>{
+  const all=$("image-gallery-selectall").checked;
+  gallerySelected=new Set(all?galleryVisibleFiles:[]);
+  document.querySelectorAll(".image-gallery-pick input").forEach(el=>{
+    el.checked=gallerySelected.has(el.value);
+    el.closest(".image-gallery-card").classList.toggle("is-selected",el.checked);
+  });
+  updateGallerySelection();
+});
+$("image-gallery-delete").addEventListener("click",async()=>{
+  if(!galleryDeleteEnabled||!gallerySelected.size||!state.server)return;
+  const names=Array.from(gallerySelected);
+  if(!confirm("¿Eliminar definitivamente "+names.length+" imagen"+(names.length===1?"":"es")+" de la Acer? Esta acción no se puede deshacer."))return;
+  const btn=$("image-gallery-delete"),server=state.server;
+  btn.disabled=true;
+  $("image-gallery-message").textContent="Eliminando imágenes seleccionadas…";
+  try{
+    const resp=await fetch(server+"/api/images/gallery/delete",{
+      method:"POST",headers:{"Content-Type":"application/json",...apiHeaders()},
+      body:JSON.stringify({filenames:names})
+    });
+    const data=await resp.json().catch(()=>({}));
+    if(!resp.ok)throw new Error(data.error||"No pude borrar las imágenes.");
+    const deleted=Array.isArray(data.deleted)?data.deleted:[];
+    if(deleted.includes(imageSelectedGalleryFile)){
+      if(imagePreviewUrl){URL.revokeObjectURL(imagePreviewUrl);imagePreviewUrl=null;}
+      imageOutputBlob=null;imageSelectedGalleryFile=null;
+      $("image-preview").hidden=true;$("image-download").hidden=true;
+      $("image-result-status").textContent="La imagen seleccionada fue eliminada.";
+    }
+    await loadImageGallery();
+    $("image-gallery-message").textContent="Eliminadas: "+deleted.length+
+      (Array.isArray(data.failed)&&data.failed.length?". No se pudieron eliminar "+data.failed.length+".":"")+
+      ". El borrado es definitivo.";
+  }catch(err){
+    $("image-gallery-message").textContent=err.message||"Error al eliminar.";
+    updateGallerySelection();
+  }
+});
 function clearImageGallery(){
   galleryEpoch++;
+  gallerySelected.clear();galleryVisibleFiles=[];galleryDeleteEnabled=false;
+  $("image-gallery-toolbar").hidden=true;
   for(const url of galleryObjectUrls)URL.revokeObjectURL(url);
   galleryObjectUrls=[];
   $("image-gallery-grid").replaceChildren();
@@ -368,6 +419,8 @@ function clearImageGallery(){
 async function loadImageGallery(){
   if(!state.server)return;
   const epoch=++galleryEpoch,server=state.server;
+  gallerySelected.clear();galleryVisibleFiles=[];
+  $("image-gallery-toolbar").hidden=true;
   for(const url of galleryObjectUrls)URL.revokeObjectURL(url);
   galleryObjectUrls=[];
   const root=$("image-gallery-grid");
@@ -380,13 +433,32 @@ async function loadImageGallery(){
     const result=await resp.json();
     if(epoch!==galleryEpoch||state.server!==server)return;
     const items=Array.isArray(result.images)?result.images.slice(0,12):[];
+    galleryDeleteEnabled=Boolean(result.delete_enabled);
+    galleryVisibleFiles=items.filter(item=>typeof item.filename==="string").map(item=>item.filename);
+    $("image-gallery-toolbar").hidden=!items.length;
+    updateGallerySelection();
     if(!items.length){$("image-gallery-message").textContent="Todavía no hay imágenes guardadas.";return;}
-    $("image-gallery-message").textContent="Mostrando "+items.length+" de "+Number(result.total||items.length)+" imágenes recientes. Tocá una para verla y descargarla.";
+    $("image-gallery-message").textContent="Mostrando "+items.length+" de "+Number(result.total||items.length)+" imágenes recientes. Tocá una para verla."+
+      (galleryDeleteEnabled?" Marcá los casilleros para eliminarlas.":" Para habilitar el borrado falta activar los permisos de escritura en Debian.");
     for(const item of items){
       if(epoch!==galleryEpoch||state.server!==server)return;
       if(typeof item.filename!=="string")continue;
+      const wrapper=document.createElement("div");
+      wrapper.className="image-gallery-card";
       const card=document.createElement("button");
       card.type="button";card.className="image-gallery-item";
+      const pick=document.createElement("label");
+      pick.className="image-gallery-pick";
+      const check=document.createElement("input");
+      check.type="checkbox";check.value=item.filename;
+      check.setAttribute("aria-label","Seleccionar imagen "+item.filename);
+      check.addEventListener("change",()=>{
+        if(check.checked)gallerySelected.add(item.filename);
+        else gallerySelected.delete(item.filename);
+        wrapper.classList.toggle("is-selected",check.checked);
+        updateGallerySelection();
+      });
+      pick.append(check,document.createTextNode(" Seleccionar"));
       const image=document.createElement("img");
       image.alt="Imagen guardada "+item.filename;
       image.loading="lazy";
@@ -395,7 +467,7 @@ async function loadImageGallery(){
       if(item.parameters&&Number.isInteger(item.parameters.seed)){
         date.textContent+=" · seed "+item.parameters.seed;
       }
-      card.append(image,date);root.append(card);
+      card.append(image,date);wrapper.append(card,pick);root.append(wrapper);
       try{
         const file=await fetch(server+"/api/images/gallery/"+encodeURIComponent(item.filename),{headers:apiHeaders(),cache:"no-store"});
         if(!file.ok)throw new Error("No disponible");
@@ -406,6 +478,7 @@ async function loadImageGallery(){
         galleryObjectUrls.push(url);
         image.src=url;
         card.addEventListener("click",()=>{
+          imageSelectedGalleryFile=item.filename;
           if(imagePreviewUrl)URL.revokeObjectURL(imagePreviewUrl);
           imagePreviewUrl=URL.createObjectURL(blob);
           imageOutputBlob=blob;

@@ -26,6 +26,7 @@ async function login(event){
     $("login-pass").value="";
     $("connection").hidden=true;$("workspace").hidden=false;
     await refreshPrices();
+    await refreshImageAvailability();
   }catch(err){
     state.server="";state.username="";state.password="";
     $("login-error").textContent=err.message||"No se pudo conectar. Revisá la URL, Tailscale y la Acer.";
@@ -37,7 +38,7 @@ $("logout").addEventListener("click",()=>{
   if(running&&controller)controller.abort();
   state.server="";state.username="";state.password="";state.finance=[];state.creative=[];state.code=[];
   $("workspace").hidden=true;$("connection").hidden=false;$("login-pass").value="";
-  $("login-error").hidden=true;renderMessages();
+  $("login-error").hidden=true;renderMessages();resetImageView();
 });
 $("server-url").value=localStorage.getItem("acerIAserver")||"";
 
@@ -88,6 +89,7 @@ function selectMode(next){
   $("finance-market").hidden=mode!=="finance";
   $("code-panel").hidden=mode!=="code";
   $("images-panel").hidden=mode!=="images";
+  if(mode==="images"&&state.server)refreshImageAvailability();
   $("conversation").hidden=mode==="images";
   const config={
     finance:{title:"Analista financiero",subtitle:"Investigación, escenarios y riesgos. Nunca opera con dinero.",placeholder:"Ej.: ¿Qué riesgos tiene comprar BTC hoy?"},
@@ -166,6 +168,102 @@ $("refresh-prices").addEventListener("click",refreshPrices);
 $("prompt-form").addEventListener("submit",send);
 elements.input.addEventListener("keydown",event=>{if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();$("prompt-form").requestSubmit();}});
 const filenameByLanguage={python:"script.py",javascript:"app.js",html:"pagina.html",css:"estilos.css",bash:"script.sh",sql:"consulta.sql",text:"archivo.txt"};
+
+let imageBusy=false, imagePreviewUrl=null, imageOutputBlob=null;
+function resetImageView(){
+  $("image-generate").disabled=true;
+  $("images-stage").textContent="Sin conexión";
+  $("image-download").hidden=true;
+  $("image-preview").hidden=true;
+  $("image-result-status").textContent="Sin imagen disponible en la web todavía";
+  if(imagePreviewUrl){URL.revokeObjectURL(imagePreviewUrl);imagePreviewUrl=null;}
+  imageOutputBlob=null;
+}
+async function refreshImageAvailability(){
+  if(!state.server||imageBusy)return;
+  const label=$("images-stage");
+  label.textContent="Comprobando motor…";
+  $("image-generate").disabled=true;
+  try{
+    const resp=await fetch(state.server+"/api/images/status",{headers:apiHeaders(),cache:"no-store"});
+    if(resp.status===404){
+      label.textContent="Conexión pendiente";
+      $("image-notice").textContent="ComfyUI ya funciona en la Acer, pero el servidor web todavía necesita actualizar el puente de imágenes. No se puede generar desde esta pestaña hasta completar esa instalación.";
+      return;
+    }
+    if(!resp.ok)throw new Error("Servidor HTTP "+resp.status);
+    const info=await resp.json();
+    if(info.available){
+      label.textContent="Motor disponible";
+      $("image-generate").disabled=false;
+      $("image-notice").textContent="Generación local por CPU. Una imagen a la vez, con tiempos variables según resolución y pasos.";
+    }else{
+      label.textContent="Motor no disponible";
+      $("image-notice").textContent="El servidor web respondió, pero todavía no pudo conectarse con ComfyUI. Revisá el estado del motor.";
+    }
+  }catch(err){
+    label.textContent="Sin conexión";
+    $("image-notice").textContent="No se pudo comprobar el generador: "+(err.message||"Revisá tu Acer.");
+  }
+}
+async function generateImage(){
+  if(imageBusy||!state.server)return;
+  const description=$("image-prompt").value.trim();
+  if(!description){$("image-result-status").textContent="Primero describí tu imagen.";return;}
+  imageBusy=true;
+  $("image-generate").disabled=true;
+  $("image-download").hidden=true;
+  $("image-result-status").textContent="Enviando solicitud a la Acer…";
+  if(imagePreviewUrl){URL.revokeObjectURL(imagePreviewUrl);imagePreviewUrl=null;}
+  $("image-preview").hidden=true;imageOutputBlob=null;
+  try{
+    const resp=await fetch(state.server+"/api/images/jobs",{
+      method:"POST",headers:{"Content-Type":"application/json",...apiHeaders()},
+      body:JSON.stringify({prompt:description,size:Number($("image-size").value),steps:Number($("image-steps").value)})
+    });
+    const job=await resp.json().catch(()=>({}));
+    if(!resp.ok)throw new Error(job.error||"El motor rechazó el trabajo ("+resp.status+")");
+    if(typeof job.job_id!=="string")throw new Error("No recibí un identificador del trabajo");
+    $("image-result-status").textContent="Generando en la Acer… Dejá abierta esta pestaña.";
+    let completed=false;
+    for(let count=0;count<180;count++){
+      await new Promise(resolve=>setTimeout(resolve,10000));
+      if(!state.server)throw new Error("Se cerró la conexión");
+      const progress=await fetch(state.server+"/api/images/jobs/"+encodeURIComponent(job.job_id),{headers:apiHeaders(),cache:"no-store"});
+      const data=await progress.json().catch(()=>({}));
+      if(!progress.ok)throw new Error(data.error||"No pude consultar el estado");
+      if(data.status==="failed")throw new Error(data.error||"ComfyUI no terminó la imagen");
+      if(data.status==="completed"){
+        completed=true;
+        const response=await fetch(state.server+"/api/images/jobs/"+encodeURIComponent(job.job_id)+"/file",{headers:apiHeaders(),cache:"no-store"});
+        if(!response.ok)throw new Error("La Acer no devolvió la imagen");
+        const blob=await response.blob();
+        if(!blob.type.includes("image/png"))throw new Error("El resultado no es una imagen PNG");
+        imageOutputBlob=blob;imagePreviewUrl=URL.createObjectURL(blob);
+        $("image-preview").src=imagePreviewUrl;
+        $("image-preview").hidden=false;
+        $("image-download").hidden=false;
+        $("image-result-status").textContent="¡Imagen terminada! Ya podés descargarla.";
+        break;
+      }
+      if(count%3===2)$("image-result-status").textContent="Generando… "+Math.round((count+1)/6)+" minutos";
+    }
+    if(!completed)throw new Error("Se agotó la espera. El trabajo podría seguir ejecutándose en Debian.");
+  }catch(err){
+    $("image-result-status").textContent="No se pudo generar: "+(err.message||"Error inesperado");
+  }finally{
+    imageBusy=false;
+    if(state.server)refreshImageAvailability();
+  }
+}
+$("image-generate").addEventListener("click",generateImage);
+$("image-download").addEventListener("click",()=>{
+  if(!imageOutputBlob)return;
+  const href=URL.createObjectURL(imageOutputBlob),a=document.createElement("a");
+  a.href=href;a.download="acer-imagen-"+new Date().toISOString().slice(0,10)+".png";
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(href),1000);
+});
 $("image-copy").addEventListener("click",async()=>{
   const description=$("image-prompt").value.trim();
   const label=$("image-copy-status");

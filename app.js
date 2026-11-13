@@ -27,6 +27,7 @@ async function login(event){
     $("connection").hidden=true;$("workspace").hidden=false;
     await refreshPrices();
     await refreshImageAvailability();
+    await loadImageGallery();
   }catch(err){
     state.server="";state.username="";state.password="";
     $("login-error").textContent=err.message||"No se pudo conectar. Revisá la URL, Tailscale y la Acer.";
@@ -38,7 +39,7 @@ $("logout").addEventListener("click",()=>{
   if(running&&controller)controller.abort();
   state.server="";state.username="";state.password="";state.finance=[];state.creative=[];state.code=[];
   $("workspace").hidden=true;$("connection").hidden=false;$("login-pass").value="";
-  $("login-error").hidden=true;renderMessages();resetImageView();
+  $("login-error").hidden=true;renderMessages();resetImageView();clearImageGallery();
 });
 $("server-url").value=localStorage.getItem("acerIAserver")||"";
 
@@ -90,6 +91,7 @@ function selectMode(next){
   $("code-panel").hidden=mode!=="code";
   $("images-panel").hidden=mode!=="images";
   if(mode==="images"&&state.server)refreshImageAvailability();
+  if(mode==="images"&&state.server)loadImageGallery();
   $("conversation").hidden=mode==="images";
   const config={
     finance:{title:"Analista financiero",subtitle:"Investigación, escenarios y riesgos. Nunca opera con dinero.",placeholder:"Ej.: ¿Qué riesgos tiene comprar BTC hoy?"},
@@ -280,6 +282,7 @@ async function generateImage(){
         $("image-preview").hidden=false;
         $("image-download").hidden=false;
         $("image-result-status").textContent="¡Imagen terminada! Ya podés descargarla.";
+        loadImageGallery();
         break;
       }
       $("image-result-status").textContent="Generando en la Acer · "+imageElapsed((Date.now()-imageProgressStart)/1000)+" transcurridos";
@@ -301,6 +304,73 @@ $("image-download").addEventListener("click",()=>{
   document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(href),1000);
 });
+
+let galleryEpoch=0, galleryObjectUrls=[];
+function clearImageGallery(){
+  galleryEpoch++;
+  for(const url of galleryObjectUrls)URL.revokeObjectURL(url);
+  galleryObjectUrls=[];
+  $("image-gallery-grid").replaceChildren();
+  $("image-gallery-message").textContent="Conectate a tu Acer para ver las imágenes guardadas.";
+}
+async function loadImageGallery(){
+  if(!state.server)return;
+  const epoch=++galleryEpoch,server=state.server;
+  for(const url of galleryObjectUrls)URL.revokeObjectURL(url);
+  galleryObjectUrls=[];
+  const root=$("image-gallery-grid");
+  root.replaceChildren();
+  $("image-gallery-message").textContent="Buscando imágenes guardadas en la Acer…";
+  try{
+    const resp=await fetch(server+"/api/images/gallery",{cache:"no-store",headers:apiHeaders()});
+    if(resp.status===404)throw new Error("La Acer necesita la actualización del servidor para mostrar imágenes anteriores.");
+    if(!resp.ok)throw new Error("La galería no está disponible (HTTP "+resp.status+").");
+    const result=await resp.json();
+    if(epoch!==galleryEpoch||state.server!==server)return;
+    const items=Array.isArray(result.images)?result.images.slice(0,12):[];
+    if(!items.length){$("image-gallery-message").textContent="Todavía no hay imágenes guardadas.";return;}
+    $("image-gallery-message").textContent="Mostrando "+items.length+" de "+Number(result.total||items.length)+" imágenes recientes. Tocá una para verla y descargarla.";
+    for(const item of items){
+      if(epoch!==galleryEpoch||state.server!==server)return;
+      if(typeof item.filename!=="string")continue;
+      const card=document.createElement("button");
+      card.type="button";card.className="image-gallery-item";
+      const image=document.createElement("img");
+      image.alt="Imagen guardada "+item.filename;
+      image.loading="lazy";
+      const date=document.createElement("span");
+      date.textContent=new Date(Number(item.timestamp)*1000).toLocaleString("es-AR",{dateStyle:"short",timeStyle:"short"});
+      card.append(image,date);root.append(card);
+      try{
+        const file=await fetch(server+"/api/images/gallery/"+encodeURIComponent(item.filename),{headers:apiHeaders(),cache:"no-store"});
+        if(!file.ok)throw new Error("No disponible");
+        const blob=await file.blob();
+        if(epoch!==galleryEpoch||state.server!==server)return;
+        if(!blob.type.includes("image/png"))throw new Error("No es PNG");
+        const url=URL.createObjectURL(blob);
+        galleryObjectUrls.push(url);
+        image.src=url;
+        card.addEventListener("click",()=>{
+          if(imagePreviewUrl)URL.revokeObjectURL(imagePreviewUrl);
+          imagePreviewUrl=URL.createObjectURL(blob);
+          imageOutputBlob=blob;
+          $("image-preview").src=imagePreviewUrl;
+          $("image-preview").hidden=false;
+          $("image-download").hidden=false;
+          $("image-result-status").textContent="Imagen recuperada: "+item.filename;
+          $("image-preview").scrollIntoView({behavior:"smooth",block:"center"});
+        });
+      }catch{
+        card.disabled=true;
+        date.textContent="Vista previa no disponible";
+      }
+    }
+  }catch(err){
+    if(epoch!==galleryEpoch)return;
+    $("image-gallery-message").textContent=err.message||"No se pudo cargar la galería.";
+  }
+}
+$("image-gallery-refresh").addEventListener("click",loadImageGallery);
 $("image-copy").addEventListener("click",async()=>{
   const description=$("image-prompt").value.trim();
   const label=$("image-copy-status");

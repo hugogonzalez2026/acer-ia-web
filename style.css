@@ -11,3 +11,20 @@
 .login-shell .login-note{font-size:11px;color:#8e9a90}
 .logout-button{border:0;text-decoration:underline;background:transparent;color:#5e806f;cursor:pointer;font:inherit}
 @media(max-width:600px){.login-shell{margin:35px 12px 0;padding:22px}}
+
+/* Modo Código: editor de solo lectura, sin ejecución automática. */
+.tabs{flex-wrap:wrap}
+.tab{white-space:nowrap}
+.code-panel{background:#fff;border:1px solid #e3e8e3;border-radius:17px;padding:20px 22px;margin-bottom:16px}
+.code-intro strong{color:#243f35;font-size:15px}
+.code-intro p{font-size:12px;color:#7d8b82;line-height:1.6;margin:7px 0 16px}
+.code-options{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:12px;margin-bottom:18px}
+.code-options label{display:flex;flex-direction:column;gap:6px;color:#546b60;font-size:12px;font-weight:650}
+.code-options select,.code-options input{border:1px solid #dce5df;background:#fcfdfb;border-radius:10px;padding:10px 12px;font:inherit;font-size:13px;color:#253a31;min-width:0}
+.code-result-title{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;padding:13px 0 9px;border-top:1px solid #edf0ec}
+.code-result-title span{font-weight:400;color:#8c9a90}
+.code-result{background:#172b2a;color:#e3f1ec;border-radius:11px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;line-height:1.65;overflow:auto;max-height:330px;min-height:95px;margin:0;padding:15px;white-space:pre}
+.code-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+.code-actions button:disabled{cursor:not-allowed;opacity:.5}
+.code-warning{font-size:11px;color:#85948b;line-height:1.5;margin:15px 0 0}
+@media(max-width:600px){.code-panel{padding:16px 13px}.code-options{grid-template-columns:1fr}.code-result{font-size:11px}.tabs{gap:6px}.tab{padding:10px 16px;font-size:12px}}

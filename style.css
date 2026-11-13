@@ -83,3 +83,18 @@
 @keyframes image-spin{to{transform:rotate(360deg)}}
 @keyframes image-progress-move{from{left:0}to{left:65%}}
 @media(prefers-reduced-motion:reduce){.image-progress-spinner,.image-progress-moving{animation:none}.image-progress-moving{width:100%}}
+
+/* Galería persistente, imágenes de la Acer sin exponer la carpeta a Internet. */
+.image-gallery{margin-top:24px;border-top:1px solid #e6ebe5;padding-top:20px}
+.image-gallery-head{display:flex;justify-content:space-between;align-items:start;gap:14px}
+.image-gallery-head strong{font-size:15px;color:#2d5240}
+.image-gallery-head p{font-size:12px;color:#809086;margin:5px 0 12px}
+#image-gallery-message{font-size:12px;color:#70887b;line-height:1.5}
+.image-gallery-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
+.image-gallery-item{border:1px solid #d8e4dc;background:#f7faf7;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;cursor:pointer;text-align:left;padding:0;color:#426451;min-width:0}
+.image-gallery-item img{display:block;width:100%;aspect-ratio:1;object-fit:cover;background:#eaf1ed}
+.image-gallery-item span{display:block;padding:7px 9px;font-size:10px}
+.image-gallery-item:hover{border-color:#398364;box-shadow:0 3px 14px #132e231c}
+.image-gallery-item:focus-visible{outline:2px solid #34855a;outline-offset:2px}
+.image-gallery-item:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:660px){.image-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.image-gallery-head{align-items:start}.image-gallery-head .secondary-button{white-space:normal}}

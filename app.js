@@ -78,7 +78,7 @@ function updateCodeOutput(){
   $("code-status").textContent=source?source.length.toLocaleString("es-AR")+" caracteres":"Todavía no hay código";
 }
 function selectMode(next){
-  if(running||!["finance","creative","code"].includes(next))return;
+  if(running||!["finance","creative","code","images"].includes(next))return;
   mode=next;
   for(const item of document.querySelectorAll(".tab")){
     const active=item.dataset.mode===mode;
@@ -87,10 +87,13 @@ function selectMode(next){
   }
   $("finance-market").hidden=mode!=="finance";
   $("code-panel").hidden=mode!=="code";
+  $("images-panel").hidden=mode!=="images";
+  $("conversation").hidden=mode==="images";
   const config={
     finance:{title:"Analista financiero",subtitle:"Investigación, escenarios y riesgos. Nunca opera con dinero.",placeholder:"Ej.: ¿Qué riesgos tiene comprar BTC hoy?"},
     creative:{title:"IA generativa",subtitle:"Textos, ideas y creación libre en tu equipo.",placeholder:"Ej.: Escribí un cuento de ciencia ficción…"},
-    code:{title:"Asistente de programación",subtitle:"Generá código, revisalo y descargalo. Sin ejecución automática.",placeholder:"Ej.: Creá un programa que analice un CSV de operaciones…"}
+    code:{title:"Asistente de programación",subtitle:"Generá código, revisalo y descargalo. Sin ejecución automática.",placeholder:"Ej.: Creá un programa que analice un CSV de operaciones…"},
+    images:{title:"Estudio de imágenes",subtitle:"Creación visual local.",placeholder:"Describí la imagen que querés crear…"}
   }[mode];
   $("chat-title").textContent=config.title;
   $("chat-subtitle").textContent=config.subtitle;
@@ -163,6 +166,14 @@ $("refresh-prices").addEventListener("click",refreshPrices);
 $("prompt-form").addEventListener("submit",send);
 elements.input.addEventListener("keydown",event=>{if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();$("prompt-form").requestSubmit();}});
 const filenameByLanguage={python:"script.py",javascript:"app.js",html:"pagina.html",css:"estilos.css",bash:"script.sh",sql:"consulta.sql",text:"archivo.txt"};
+$("image-copy").addEventListener("click",async()=>{
+  const description=$("image-prompt").value.trim();
+  const label=$("image-copy-status");
+  if(!description){label.textContent="Escribí primero una descripción.";return;}
+  try{await navigator.clipboard.writeText(description);label.textContent="Descripción copiada.";}
+  catch{label.textContent="No se pudo copiar. Seleccioná el texto para copiarlo manualmente.";}
+});
+$("image-prompt").addEventListener("input",()=>{$("image-copy-status").textContent="";});
 $("code-language").addEventListener("change",()=>{
   const current=$("code-filename").value.trim();
   if(!current||Object.values(filenameByLanguage).includes(current)){

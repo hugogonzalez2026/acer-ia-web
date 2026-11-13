@@ -6,8 +6,8 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="acer-ia-build" content="20261113m2">
   <title>Acer IA · Móvil</title>
-  <link rel="stylesheet" href="./style.css?v=20261113progress1">
-  <script src="./app.js?v=20261113progress1" defer></script>
+  <link rel="stylesheet" href="./style.css?v=gallery2">
+  <script src="./app.js?v=gallery2" defer></script>
 </head>
 <body>
   <div class="app-shell">
@@ -100,6 +100,11 @@
             <span class="images-preview-label" id="image-result-status" role="status" aria-live="polite">Sin imagen disponible en la web todavía</span>
           </div>
         </div>
+        <section class="image-gallery" aria-label="Mis imágenes guardadas">
+          <div class="image-gallery-head"><div><strong>🖼️ Mis imágenes</strong><p>Imágenes guardadas en la Acer, disponibles aunque cierres el navegador.</p></div><button class="secondary-button" id="image-gallery-refresh" type="button">Actualizar galería</button></div>
+          <p id="image-gallery-message" role="status" aria-live="polite">Conectate a tu Acer para ver las imágenes guardadas.</p>
+          <div id="image-gallery-grid" class="image-gallery-grid"></div>
+        </section>
       </section>
       <section class="conversation" id="conversation" aria-label="Chat">
         <div class="conversation-header"><div><strong id="chat-title">Analista financiero</strong><p id="chat-subtitle">Investigación, escenarios y riesgos. Nunca opera con dinero.</p></div><button id="clear-chat" class="secondary-button">Nuevo chat</button></div>

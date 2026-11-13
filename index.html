@@ -32,11 +32,12 @@
   <div id="login-error" class="error" role="alert" hidden></div>
 </section>
     <main class="workspace" id="workspace" hidden>
-      <div class="headline"><p class="eyebrow">TU ESTACIÓN DE INTELIGENCIA</p><h1>Un lugar para analizar<br>y crear.</h1><p>Dos formas de pensar, una sola conversación a la vez.</p></div>
+      <div class="headline"><p class="eyebrow">TU ESTACIÓN DE INTELIGENCIA</p><h1>Un lugar para analizar<br>y crear.</h1><p>Cuatro espacios para analizar, programar y crear.</p></div>
       <nav class="tabs" aria-label="Tipo de consulta">
         <button class="tab active" id="tab-finance" data-mode="finance" aria-pressed="true">📈 &nbsp; Finanzas</button>
         <button class="tab" id="tab-creative" data-mode="creative" aria-pressed="false">✦ &nbsp; Generativa</button>
         <button class="tab" id="tab-code" data-mode="code" aria-pressed="false">⌘ &nbsp; Código</button>
+        <button class="tab" id="tab-images" data-mode="images" aria-pressed="false">🎨 &nbsp; Imágenes</button>
       </nav>
       <section id="finance-market" class="market-panel" aria-label="Referencias de mercado">
         <div class="market-title"><span>Referencias cripto</span><span id="price-time">Conectando…</span></div>
@@ -63,7 +64,35 @@
         </div>
         <p class="code-warning">Revisá el código antes de ejecutarlo. Ningún archivo se instala ni se ejecuta automáticamente en la Acer.</p>
       </section>
-      <section class="conversation" aria-label="Chat">
+      <section id="images-panel" class="images-panel" hidden aria-label="Generación de imágenes">
+        <div class="images-head">
+          <div><p class="eyebrow">ESTUDIO VISUAL LOCAL</p><h2>Imágenes desde tu Acer 🎨</h2><p>Stable Diffusion 1.5 + ComfyUI. Generación local, sin servicios externos de imágenes.</p></div>
+          <span class="images-stage">Integración web pendiente</span>
+        </div>
+        <div class="images-layout">
+          <div class="images-controls">
+            <label for="image-prompt">Describí la imagen</label>
+            <textarea id="image-prompt" rows="6" maxlength="1500" placeholder="Una noche de lluvia en San Telmo, adoquines mojados, faroles cálidos, fotografía cinematográfica…"></textarea>
+            <div class="images-settings">
+              <label for="image-size">Resolución<select id="image-size"><option value="384">384 × 384 · Inicial</option><option value="512">512 × 512 · Detallada</option></select></label>
+              <label for="image-steps">Pasos<select id="image-steps"><option value="8">8 · Inicial</option><option value="15">15 · Más detalle</option><option value="20">20 · Máximo</option></select></label>
+            </div>
+            <div class="images-actions">
+              <button id="image-generate" type="button" disabled aria-describedby="image-notice">Generar imagen</button>
+              <button id="image-copy" type="button" class="secondary-button">Copiar descripción</button>
+            </div>
+            <p id="image-copy-status" class="images-copy-status" role="status" aria-live="polite"></p>
+            <p id="image-notice" class="images-notice"><strong>¡El motor local ya generó su primera imagen!</strong> Estoy preparando la conexión autenticada entre esta web y ComfyUI. Hasta que esté verificada, el botón Generar permanecerá deshabilitado. No se abre ComfyUI directamente a Internet.</p>
+          </div>
+          <div class="images-preview">
+            <div class="images-preview-art" aria-hidden="true">✧</div>
+            <strong>Tu próxima imagen aparecerá acá</strong>
+            <p>Vas a poder verla y descargarla sin entrar a Debian, una vez conectada la API.</p>
+            <span class="images-preview-label">Sin imagen disponible en la web todavía</span>
+          </div>
+        </div>
+      </section>
+      <section class="conversation" id="conversation" aria-label="Chat">
         <div class="conversation-header"><div><strong id="chat-title">Analista financiero</strong><p id="chat-subtitle">Investigación, escenarios y riesgos. Nunca opera con dinero.</p></div><button id="clear-chat" class="secondary-button">Nuevo chat</button></div>
         <div id="messages" class="messages" role="log" aria-live="polite">
           <div class="empty-state"><div class="empty-symbol">✳</div><h2>¿Qué analizamos hoy?</h2><p>Podés consultar sobre mercados, estrategias y decisiones de inversión.</p></div>

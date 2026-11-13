@@ -76,12 +76,36 @@
             <textarea id="image-prompt" rows="6" maxlength="1500" placeholder="Una noche de lluvia en San Telmo, adoquines mojados, faroles cálidos, fotografía cinematográfica…"></textarea>
             <div class="images-settings">
               <label for="image-size">Resolución<select id="image-size"><option value="384">384 × 384 · Inicial</option><option value="512">512 × 512 · Detallada</option></select></label>
-              <label for="image-steps">Pasos<select id="image-steps"><option value="8">8 · Inicial</option><option value="15">15 · Más detalle</option><option value="20">20 · Máximo</option></select></label>
+              <label for="image-steps">Pasos<select id="image-steps"><option value="8">8 · Inicial</option><option value="15">15 · Más detalle</option><option value="20">20 · Detalle</option><option value="28">28 · Calidad (más lento)</option></select></label>
             </div>
+            <div class="image-v2-options">
+              <label for="image-preset">Tipo de imagen
+                <select id="image-preset">
+                  <option value="auto">Libre</option><option value="portrait">Retrato</option>
+                  <option value="fullbody">Cuerpo entero</option><option value="product">Producto</option>
+                  <option value="landscape">Paisaje</option><option value="illustration">Ilustración</option>
+                </select>
+              </label>
+              <label for="image-sampler">Muestreo
+                <select id="image-sampler">
+                  <option value="dpmpp_2m">DPM++ 2M (detalle)</option>
+                  <option value="euler">Euler (rápido)</option>
+                  <option value="euler_ancestral">Euler A (variación)</option>
+                </select>
+              </label>
+              <label for="image-cfg">Fidelidad al texto (CFG)
+                <select id="image-cfg"><option value="5">5 · Flexible</option><option value="6.5" selected>6,5 · Equilibrado</option><option value="8">8 · Fiel al texto</option><option value="10">10 · Alto</option></select>
+              </label>
+              <label for="image-seed">Semilla (vacía = aleatoria)
+                <input id="image-seed" type="number" min="0" max="4294967295" step="1" placeholder="Aleatoria" inputmode="numeric">
+              </label>
+            </div>
+            <p class="image-v2-tip">Consejo: SD 1.5 suele interpretar mejor frases descriptivas en inglés. «Cuerpo entero» refuerza el encuadre, pero no lo garantiza.</p>
             <div class="images-actions">
               <button id="image-generate" type="button" disabled aria-describedby="image-notice">Generar imagen</button>
               <button id="image-copy" type="button" class="secondary-button">Copiar descripción</button>
             </div>
+            <p id="image-last-settings" class="image-last-settings" role="status">Modelo: Stable Diffusion 1.5 · CPU</p>
             <p id="image-copy-status" class="images-copy-status" role="status" aria-live="polite"></p>
             <section id="image-progress" class="image-progress" hidden aria-label="Progreso de generación" aria-live="polite">
               <div class="image-progress-top"><span class="image-progress-spinner" aria-hidden="true"></span><strong id="image-progress-stage">Preparando imagen…</strong><span id="image-progress-clock">0:00</span></div>

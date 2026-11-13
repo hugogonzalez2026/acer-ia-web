@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="acer-ia-build" content="20261113m2">
+  <title>Acer IA · Móvil</title>
+  <link rel="stylesheet" href="./style.css?v=20261113m2">
+  <script src="./app.js?v=20261113m2" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-mark">A</div>
+      <div class="brand-text"><strong>ACER <span>IA</span></strong><small>Laboratorio privado</small></div>
+      <div class="local-status"><span class="status-dot"></span> GitHub Pages</div>
+    </header>
+    <section class="login-shell" id="connection">
+  <p class="eyebrow">ACCESO A TU SERVIDOR</p>
+  <h1>Acer IA</h1>
+  <p>Finanzas y creatividad en una sola web. El cerebro funciona en tu Acer, no en GitHub.</p>
+  <form id="login-form" class="login-form">
+    <label for="server-url">Dirección privada del servidor HTTPS</label>
+    <input id="server-url" type="url" required placeholder="https://acer.tu-red.ts.net" autocomplete="url">
+    <label for="login-user">Usuario</label>
+    <input id="login-user" type="text" required value="hugo" autocomplete="username">
+    <label for="login-pass">Contraseña de Acer IA</label>
+    <input id="login-pass" type="password" required autocomplete="current-password">
+    <button id="login-button" type="submit">Conectarme a mi Acer</button>
+  </form>
+  <p class="login-note">La contraseña no se publica en GitHub ni se guarda en el navegador. El servidor necesita estar encendido y Tailscale Funnel activo.</p>
+  <div id="login-error" class="error" role="alert" hidden></div>
+</section>
+    <main class="workspace" id="workspace" hidden>
+      <div class="headline"><p class="eyebrow">TU ESTACIÓN DE INTELIGENCIA</p><h1>Un lugar para analizar<br>y crear.</h1><p>Cuatro espacios para analizar, programar y crear.</p></div>
+      <nav class="tabs" aria-label="Tipo de consulta">
+        <button class="tab active" id="tab-finance" data-mode="finance" aria-pressed="true">📈 &nbsp; Finanzas</button>
+        <button class="tab" id="tab-creative" data-mode="creative" aria-pressed="false">✦ &nbsp; Generativa</button>
+        <button class="tab" id="tab-code" data-mode="code" aria-pressed="false">⌘ &nbsp; Código</button>
+        <button class="tab" id="tab-images" data-mode="images" aria-pressed="false">🎨 &nbsp; Imágenes</button>
+      </nav>
+      <section id="finance-market" class="market-panel" aria-label="Referencias de mercado">
+        <div class="market-title"><span>Referencias cripto</span><span id="price-time">Conectando…</span></div>
+        <div class="market-prices"><div><span>BTC / USD</span><strong id="btc-price">—</strong></div><div><span>ETH / USD</span><strong id="eth-price">—</strong></div><button class="refresh" id="refresh-prices" title="Actualizar cotizaciones" aria-label="Actualizar cotizaciones">↻</button></div>
+        <div class="source">Fuente: <a href="https://www.kraken.com/prices" target="_blank" rel="noopener noreferrer">Kraken</a> · Precios puntuales, no una recomendación de inversión.</div>
+      </section>
+      <section id="code-panel" class="code-panel" hidden aria-label="Espacio de programación">
+        <div class="code-intro"><strong>Laboratorio de código</strong><p>Pedile a la IA que programe. Podés revisar, copiar y descargar el resultado, sin ejecutar nada en Debian.</p></div>
+        <div class="code-options">
+          <label for="code-language">Lenguaje
+            <select id="code-language">
+              <option value="python">Python</option><option value="javascript">JavaScript</option><option value="html">HTML</option><option value="css">CSS</option><option value="bash">Bash</option><option value="sql">SQL</option><option value="text">Otro / texto</option>
+            </select>
+          </label>
+          <label for="code-filename">Nombre del archivo
+            <input id="code-filename" type="text" value="script.py" maxlength="70" autocomplete="off" spellcheck="false">
+          </label>
+        </div>
+        <div class="code-result-title"><strong>Último código generado</strong><span id="code-status">Todavía no hay código</span></div>
+        <pre class="code-result"><code id="code-output">Pedile abajo un programa y lo vas a ver acá.</code></pre>
+        <div class="code-actions">
+          <button id="copy-code" class="secondary-button" disabled>Copiar código</button>
+          <button id="download-code" class="secondary-button" disabled>Descargar archivo</button>
+        </div>
+        <p class="code-warning">Revisá el código antes de ejecutarlo. Ningún archivo se instala ni se ejecuta automáticamente en la Acer.</p>
+      </section>
+      <section id="images-panel" class="images-panel" hidden aria-label="Generación de imágenes">
+        <div class="images-head">
+          <div><p class="eyebrow">ESTUDIO VISUAL LOCAL</p><h2>Imágenes desde tu Acer 🎨</h2><p>Stable Diffusion 1.5 + ComfyUI. Generación local, sin servicios externos de imágenes.</p></div>
+          <span class="images-stage" id="images-stage" role="status">Comprobando motor…</span>
+        </div>
+        <div class="images-layout">
+          <div class="images-controls">
+            <label for="image-prompt">Describí la imagen</label>
+            <textarea id="image-prompt" rows="6" maxlength="1500" placeholder="Una noche de lluvia en San Telmo, adoquines mojados, faroles cálidos, fotografía cinematográfica…"></textarea>
+            <div class="images-settings">
+              <label for="image-size">Resolución<select id="image-size"><option value="384">384 × 384 · Inicial</option><option value="512">512 × 512 · Detallada</option></select></label>
+              <label for="image-steps">Pasos<select id="image-steps"><option value="8">8 · Inicial</option><option value="15">15 · Más detalle</option><option value="20">20 · Máximo</option></select></label>
+            </div>
+            <div class="images-actions">
+              <button id="image-generate" type="button" disabled aria-describedby="image-notice">Generar imagen</button>
+              <button id="image-copy" type="button" class="secondary-button">Copiar descripción</button>
+            </div>
+            <p id="image-copy-status" class="images-copy-status" role="status" aria-live="polite"></p>
+            <p id="image-notice" class="images-notice">Comprobando si la Acer tiene instalada la conexión segura con ComfyUI. Si todavía falta, te lo voy a indicar acá. No se abre ComfyUI directamente a Internet.</p>
+          </div>
+          <div class="images-preview">
+            <div class="images-preview-art" aria-hidden="true">✧</div>
+            <strong>Tu próxima imagen aparecerá acá</strong>
+            <p>Vas a poder verla y descargarla sin entrar a Debian, una vez conectada la API.</p>
+            <img id="image-preview" class="image-preview-result" alt="Imagen generada por Stable Diffusion en Acer" hidden>
+            <button id="image-download" class="secondary-button" type="button" hidden>Descargar PNG</button>
+            <span class="images-preview-label" id="image-result-status" role="status" aria-live="polite">Sin imagen disponible en la web todavía</span>
+          </div>
+        </div>
+      </section>
+      <section class="conversation" id="conversation" aria-label="Chat">
+        <div class="conversation-header"><div><strong id="chat-title">Analista financiero</strong><p id="chat-subtitle">Investigación, escenarios y riesgos. Nunca opera con dinero.</p></div><button id="clear-chat" class="secondary-button">Nuevo chat</button></div>
+        <div id="messages" class="messages" role="log" aria-live="polite">
+          <div class="empty-state"><div class="empty-symbol">✳</div><h2>¿Qué analizamos hoy?</h2><p>Podés consultar sobre mercados, estrategias y decisiones de inversión.</p></div>
+        </div>
+        <form id="prompt-form" class="composer"><label class="sr-only" for="prompt">Escribí tu consulta</label><textarea id="prompt" rows="2" maxlength="4000" placeholder="Escribí tu consulta…" required></textarea><div class="composer-footer"><span id="input-hint">Enter envía · Shift+Enter, nueva línea</span><button id="send" type="submit">Enviar <span>↑</span></button></div></form>
+        <div id="error" class="error" role="alert" hidden></div>
+      </section>
+      <footer>100 % análisis · 0 permisos de trading · IA ejecutándose en la Acer · <button class="logout-button" id="logout">Desconectar</button></footer>
+    </main>
+  </div>
+</body>
+</html>

@@ -6,8 +6,8 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="acer-ia-build" content="20261113m2">
   <title>Acer IA · Laboratorio</title>
-  <link rel="stylesheet" href="./style.css?v=imagesv2b">
-  <script src="./app.js?v=imagesv2b" defer></script>
+  <link rel="stylesheet" href="./style.css?v=gallerydelete1">
+  <script src="./app.js?v=gallerydelete1" defer></script>
 </head>
 <body>
   <div class="app-shell">
@@ -127,7 +127,12 @@
           </div>
         </div>
         <section class="image-gallery" aria-label="Mis imágenes guardadas">
-          <div class="image-gallery-head"><div><strong>🖼️ Mis imágenes</strong><p>Imágenes guardadas en la Acer, disponibles aunque cierres el navegador.</p></div><button class="secondary-button" id="image-gallery-refresh" type="button">Actualizar galería</button></div>
+          <div class="image-gallery-head"><div><strong>🖼️ Mis imágenes</strong><p>Seleccioná las imágenes que quieras eliminar o tocá una para verla.</p></div><button class="secondary-button" id="image-gallery-refresh" type="button">Actualizar galería</button></div>
+          <div class="image-gallery-toolbar" id="image-gallery-toolbar" hidden>
+            <label class="image-gallery-selectall"><input id="image-gallery-selectall" type="checkbox"> Seleccionar todas las visibles</label>
+            <span id="image-gallery-count" aria-live="polite">0 seleccionadas</span>
+            <button id="image-gallery-delete" type="button" class="image-gallery-danger" disabled>Eliminar seleccionadas</button>
+          </div>
           <p id="image-gallery-message" role="status" aria-live="polite">Conectate a tu Acer para ver las imágenes guardadas.</p>
           <div id="image-gallery-grid" class="image-gallery-grid"></div>
         </section>

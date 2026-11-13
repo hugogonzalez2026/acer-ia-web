@@ -54,3 +54,12 @@
 .images-preview p{font-size:12px;line-height:1.65;color:#718b7a;max-width:235px;margin:0}
 .images-preview-label{font-size:10px;color:#81968a;letter-spacing:.03em;margin-top:6px}
 @media(max-width:660px){.images-panel{padding:17px 13px}.images-head{flex-direction:column;gap:10px}.images-layout{grid-template-columns:1fr}.images-preview{min-height:240px}.images-settings{grid-template-columns:1fr 1fr}}
+
+/* Resultado PNG local de ComfyUI */
+.images-preview:has(.image-preview-result:not([hidden])){background:#f7faf7}
+.image-preview-result{display:block;width:100%;height:auto;max-height:550px;object-fit:contain;border-radius:10px;box-shadow:0 4px 18px #102c2418}
+.image-preview-result[hidden]{display:none}
+.images-preview:has(.image-preview-result:not([hidden])) .images-preview-art,
+.images-preview:has(.image-preview-result:not([hidden]))>strong,
+.images-preview:has(.image-preview-result:not([hidden]))>p{display:none}
+.images-preview #image-download{margin-top:7px}

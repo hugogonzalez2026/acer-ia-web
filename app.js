@@ -359,6 +359,9 @@ async function loadImageGallery(){
       image.loading="lazy";
       const date=document.createElement("span");
       date.textContent=new Date(Number(item.timestamp)*1000).toLocaleString("es-AR",{dateStyle:"short",timeStyle:"short"});
+      if(item.parameters&&Number.isInteger(item.parameters.seed)){
+        date.textContent+=" · seed "+item.parameters.seed;
+      }
       card.append(image,date);root.append(card);
       try{
         const file=await fetch(server+"/api/images/gallery/"+encodeURIComponent(item.filename),{headers:apiHeaders(),cache:"no-store"});
@@ -376,6 +379,21 @@ async function loadImageGallery(){
           $("image-preview").src=imagePreviewUrl;
           $("image-preview").hidden=false;
           $("image-download").hidden=false;
+          if(item.parameters&&typeof item.parameters==="object"){
+            const data=item.parameters;
+            if(typeof data.prompt==="string"&&data.prompt) $("image-prompt").value=data.prompt;
+            if(Number.isInteger(data.seed)) $("image-seed").value=String(data.seed);
+            if([8,15,20,28].includes(data.steps)) $("image-steps").value=String(data.steps);
+            if([384,512].includes(data.width)) $("image-size").value=String(data.width);
+            if(["euler","euler_ancestral","dpmpp_2m"].includes(data.sampler)) $("image-sampler").value=data.sampler;
+            if(Number.isFinite(data.cfg)) {
+              const opts=Array.from($("image-cfg").options);
+              opts.sort((a,b)=>Math.abs(Number(a.value)-data.cfg)-Math.abs(Number(b.value)-data.cfg));
+              if(opts[0])$("image-cfg").value=opts[0].value;
+            }
+            $("image-preset").value="auto";
+            $("image-last-settings").textContent="Imagen recuperada · "+(data.model||"SD 1.5")+" · seed "+(data.seed??"no disponible")+" · "+(data.steps??"?")+" pasos";
+          }
           $("image-result-status").textContent="Imagen recuperada: "+item.filename;
           $("image-preview").scrollIntoView({behavior:"smooth",block:"center"});
         });

@@ -83,6 +83,12 @@
               <button id="image-copy" type="button" class="secondary-button">Copiar descripción</button>
             </div>
             <p id="image-copy-status" class="images-copy-status" role="status" aria-live="polite"></p>
+            <section id="image-progress" class="image-progress" hidden aria-label="Progreso de generación" aria-live="polite">
+              <div class="image-progress-top"><span class="image-progress-spinner" aria-hidden="true"></span><strong id="image-progress-stage">Preparando imagen…</strong><span id="image-progress-clock">0:00</span></div>
+              <div class="image-progress-track" role="progressbar" aria-label="Generación en progreso" aria-valuetext="Procesamiento en curso"><span class="image-progress-moving"></span></div>
+              <p id="image-progress-info">Conectando con ComfyUI…</p>
+              <p class="image-progress-footnote">La barra muestra actividad, no un porcentaje estimado.</p>
+            </section>
             <p id="image-notice" class="images-notice">Comprobando si la Acer tiene instalada la conexión segura con ComfyUI. Si todavía falta, te lo voy a indicar acá. No se abre ComfyUI directamente a Internet.</p>
           </div>
           <div class="images-preview">

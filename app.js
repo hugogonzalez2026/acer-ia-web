@@ -172,6 +172,7 @@ elements.input.addEventListener("keydown",event=>{if(event.key==="Enter"&&!event
 const filenameByLanguage={python:"script.py",javascript:"app.js",html:"pagina.html",css:"estilos.css",bash:"script.sh",sql:"consulta.sql",text:"archivo.txt"};
 
 let imageBusy=false, imagePreviewUrl=null, imageOutputBlob=null;
+let imageLastSeed=null, imageLastParams=null;
 let imageProgressTimer=null, imageProgressStart=0;
 function imageElapsed(seconds){
   const total=Math.max(0,Math.floor(seconds));
@@ -239,6 +240,8 @@ async function generateImage(){
   const description=$("image-prompt").value.trim();
   if(!description){$("image-result-status").textContent="Primero describí tu imagen.";return;}
   imageBusy=true;
+  $("image-repeat").disabled=true;
+  $("image-variation").disabled=true;
   imageProgressBegin();
   $("image-generate").disabled=true;
   $("image-download").hidden=true;
@@ -262,8 +265,17 @@ async function generateImage(){
     if(!resp.ok)throw new Error(job.error||"El motor rechazó el trabajo ("+resp.status+")");
     if(typeof job.job_id!=="string")throw new Error("No recibí un identificador del trabajo");
     if(Number.isInteger(job.seed)){
-      $("image-seed").value=String(job.seed);
-      $("image-last-settings").textContent="Modelo: "+(job.model||"SD 1.5")+" · Semilla: "+job.seed+" · "+(job.sampler||"sampler")+" · CFG "+(job.cfg??"")+" · "+(job.steps??"")+" pasos";
+      imageLastSeed=job.seed;
+      imageLastParams={
+        prompt:description,seed:job.seed,preset:$("image-preset").value,
+        sampler:job.sampler||$("image-sampler").value,
+        cfg:job.cfg??Number($("image-cfg").value),
+        steps:job.steps??Number($("image-steps").value),
+        size:Number($("image-size").value)
+      };
+      $("image-last-settings").textContent="Modelo: "+(job.model||"SD 1.5")+" · Semilla utilizada: "+job.seed+" · "+(job.sampler||"sampler")+" · CFG "+(job.cfg??"")+" · "+(job.steps??"")+" pasos";
+      // No copiar la seed aleatoria en el campo: si sigue vacío, la próxima
+      // pulsación de Generar produce una imagen nueva.
     }
     $("image-result-status").textContent="Generando en la Acer…";
     imageProgressStage("Solicitud aceptada","Esperando confirmación de la cola de ComfyUI.");
@@ -305,6 +317,8 @@ async function generateImage(){
   }finally{
     imageProgressEnd();
     imageBusy=false;
+    $("image-repeat").disabled=!imageLastParams;
+    $("image-variation").disabled=!imageLastParams;
     if(state.server)refreshImageAvailability();
   }
 }
@@ -314,6 +328,25 @@ $("image-preset").addEventListener("change",()=>{
     $("image-size").value="512";
     $("image-steps").value="20";
   }
+});
+$("image-repeat").addEventListener("click",()=>{
+  if(imageBusy||!imageLastParams)return;
+  const p=imageLastParams;
+  $("image-prompt").value=p.prompt;
+  $("image-preset").value=p.preset;
+  $("image-size").value=String(p.size);
+  $("image-steps").value=String(p.steps);
+  $("image-sampler").value=p.sampler;
+  const candidates=Array.from($("image-cfg").options);
+  candidates.sort((a,b)=>Math.abs(Number(a.value)-p.cfg)-Math.abs(Number(b.value)-p.cfg));
+  if(candidates[0])$("image-cfg").value=candidates[0].value;
+  $("image-seed").value=String(p.seed);
+  generateImage();
+});
+$("image-variation").addEventListener("click",()=>{
+  if(imageBusy||!imageLastParams)return;
+  $("image-seed").value="";
+  generateImage();
 });
 $("image-generate").addEventListener("click",generateImage);
 $("image-download").addEventListener("click",()=>{
@@ -392,6 +425,19 @@ async function loadImageGallery(){
               if(opts[0])$("image-cfg").value=opts[0].value;
             }
             $("image-preset").value="auto";
+            if(Number.isInteger(data.seed)){
+              imageLastSeed=data.seed;
+              imageLastParams={
+                prompt:typeof data.prompt==="string"?data.prompt:$("image-prompt").value,
+                seed:data.seed,preset:"auto",
+                sampler:["euler","euler_ancestral","dpmpp_2m"].includes(data.sampler)?data.sampler:"dpmpp_2m",
+                cfg:Number.isFinite(data.cfg)?data.cfg:6.5,
+                steps:[8,15,20,28].includes(data.steps)?data.steps:20,
+                size:[384,512].includes(data.width)?data.width:512
+              };
+              $("image-repeat").disabled=false;
+              $("image-variation").disabled=false;
+            }
             $("image-last-settings").textContent="Imagen recuperada · "+(data.model||"SD 1.5")+" · seed "+(data.seed??"no disponible")+" · "+(data.steps??"?")+" pasos";
           }
           $("image-result-status").textContent="Imagen recuperada: "+item.filename;

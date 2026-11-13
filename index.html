@@ -36,11 +36,32 @@
       <nav class="tabs" aria-label="Tipo de consulta">
         <button class="tab active" id="tab-finance" data-mode="finance" aria-pressed="true">📈 &nbsp; Finanzas</button>
         <button class="tab" id="tab-creative" data-mode="creative" aria-pressed="false">✦ &nbsp; Generativa</button>
+        <button class="tab" id="tab-code" data-mode="code" aria-pressed="false">⌘ &nbsp; Código</button>
       </nav>
       <section id="finance-market" class="market-panel" aria-label="Referencias de mercado">
         <div class="market-title"><span>Referencias cripto</span><span id="price-time">Conectando…</span></div>
         <div class="market-prices"><div><span>BTC / USD</span><strong id="btc-price">—</strong></div><div><span>ETH / USD</span><strong id="eth-price">—</strong></div><button class="refresh" id="refresh-prices" title="Actualizar cotizaciones" aria-label="Actualizar cotizaciones">↻</button></div>
         <div class="source">Fuente: <a href="https://www.kraken.com/prices" target="_blank" rel="noopener noreferrer">Kraken</a> · Precios puntuales, no una recomendación de inversión.</div>
+      </section>
+      <section id="code-panel" class="code-panel" hidden aria-label="Espacio de programación">
+        <div class="code-intro"><strong>Laboratorio de código</strong><p>Pedile a la IA que programe. Podés revisar, copiar y descargar el resultado, sin ejecutar nada en Debian.</p></div>
+        <div class="code-options">
+          <label for="code-language">Lenguaje
+            <select id="code-language">
+              <option value="python">Python</option><option value="javascript">JavaScript</option><option value="html">HTML</option><option value="css">CSS</option><option value="bash">Bash</option><option value="sql">SQL</option><option value="text">Otro / texto</option>
+            </select>
+          </label>
+          <label for="code-filename">Nombre del archivo
+            <input id="code-filename" type="text" value="script.py" maxlength="70" autocomplete="off" spellcheck="false">
+          </label>
+        </div>
+        <div class="code-result-title"><strong>Último código generado</strong><span id="code-status">Todavía no hay código</span></div>
+        <pre class="code-result"><code id="code-output">Pedile abajo un programa y lo vas a ver acá.</code></pre>
+        <div class="code-actions">
+          <button id="copy-code" class="secondary-button" disabled>Copiar código</button>
+          <button id="download-code" class="secondary-button" disabled>Descargar archivo</button>
+        </div>
+        <p class="code-warning">Revisá el código antes de ejecutarlo. Ningún archivo se instala ni se ejecuta automáticamente en la Acer.</p>
       </section>
       <section class="conversation" aria-label="Chat">
         <div class="conversation-header"><div><strong id="chat-title">Analista financiero</strong><p id="chat-subtitle">Investigación, escenarios y riesgos. Nunca opera con dinero.</p></div><button id="clear-chat" class="secondary-button">Nuevo chat</button></div>

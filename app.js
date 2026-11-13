@@ -170,7 +170,33 @@ elements.input.addEventListener("keydown",event=>{if(event.key==="Enter"&&!event
 const filenameByLanguage={python:"script.py",javascript:"app.js",html:"pagina.html",css:"estilos.css",bash:"script.sh",sql:"consulta.sql",text:"archivo.txt"};
 
 let imageBusy=false, imagePreviewUrl=null, imageOutputBlob=null;
+let imageProgressTimer=null, imageProgressStart=0;
+function imageElapsed(seconds){
+  const total=Math.max(0,Math.floor(seconds));
+  return Math.floor(total/60)+":"+String(total%60).padStart(2,"0");
+}
+function imageProgressStage(label,explanation){
+  $("image-progress-stage").textContent=label;
+  $("image-progress-info").textContent=explanation;
+}
+function imageProgressBegin(){
+  imageProgressStart=Date.now();
+  $("image-progress").hidden=false;
+  $("images-stage").textContent="Generando…";
+  $("image-progress-clock").textContent="0:00";
+  if(imageProgressTimer)clearInterval(imageProgressTimer);
+  imageProgressTimer=setInterval(()=>{
+    $("image-progress-clock").textContent=imageElapsed((Date.now()-imageProgressStart)/1000);
+  },1000);
+  imageProgressStage("Preparando solicitud…","Conectando con el motor de imágenes.");
+}
+function imageProgressEnd(){
+  if(imageProgressTimer){clearInterval(imageProgressTimer);imageProgressTimer=null;}
+  $("image-progress").hidden=true;
+}
+
 function resetImageView(){
+  imageProgressEnd();
   $("image-generate").disabled=true;
   $("images-stage").textContent="Sin conexión";
   $("image-download").hidden=true;
@@ -211,6 +237,7 @@ async function generateImage(){
   const description=$("image-prompt").value.trim();
   if(!description){$("image-result-status").textContent="Primero describí tu imagen.";return;}
   imageBusy=true;
+  imageProgressBegin();
   $("image-generate").disabled=true;
   $("image-download").hidden=true;
   $("image-result-status").textContent="Enviando solicitud a la Acer…";
@@ -224,7 +251,8 @@ async function generateImage(){
     const job=await resp.json().catch(()=>({}));
     if(!resp.ok)throw new Error(job.error||"El motor rechazó el trabajo ("+resp.status+")");
     if(typeof job.job_id!=="string")throw new Error("No recibí un identificador del trabajo");
-    $("image-result-status").textContent="Generando en la Acer… Dejá abierta esta pestaña.";
+    $("image-result-status").textContent="Generando en la Acer…";
+    imageProgressStage("Solicitud aceptada","Esperando confirmación de la cola de ComfyUI.");
     let completed=false;
     for(let count=0;count<180;count++){
       await new Promise(resolve=>setTimeout(resolve,10000));
@@ -233,6 +261,14 @@ async function generateImage(){
       const data=await progress.json().catch(()=>({}));
       if(!progress.ok)throw new Error(data.error||"No pude consultar el estado");
       if(data.status==="failed")throw new Error(data.error||"ComfyUI no terminó la imagen");
+      if(data.status==="queued"){
+        imageProgressStage("En cola","La Acer recibió tu pedido y está esperando para procesarlo.");
+        $("images-stage").textContent="En cola";
+      }else if(data.status==="processing"){
+        const detail=data.stage==="finalizing"?"ComfyUI está guardando el resultado…":"El procesador está creando la imagen.";
+        imageProgressStage(data.stage==="finalizing"?"Terminando imagen…":"Generando imagen…",detail);
+        $("images-stage").textContent="Generando…";
+      }
       if(data.status==="completed"){
         completed=true;
         const response=await fetch(state.server+"/api/images/jobs/"+encodeURIComponent(job.job_id)+"/file",{headers:apiHeaders(),cache:"no-store"});
@@ -246,12 +282,13 @@ async function generateImage(){
         $("image-result-status").textContent="¡Imagen terminada! Ya podés descargarla.";
         break;
       }
-      if(count%3===2)$("image-result-status").textContent="Generando… "+Math.round((count+1)/6)+" minutos";
+      $("image-result-status").textContent="Generando en la Acer · "+imageElapsed((Date.now()-imageProgressStart)/1000)+" transcurridos";
     }
     if(!completed)throw new Error("Se agotó la espera. El trabajo podría seguir ejecutándose en Debian.");
   }catch(err){
     $("image-result-status").textContent="No se pudo generar: "+(err.message||"Error inesperado");
   }finally{
+    imageProgressEnd();
     imageBusy=false;
     if(state.server)refreshImageAvailability();
   }

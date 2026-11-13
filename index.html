@@ -67,7 +67,7 @@
       <section id="images-panel" class="images-panel" hidden aria-label="Generación de imágenes">
         <div class="images-head">
           <div><p class="eyebrow">ESTUDIO VISUAL LOCAL</p><h2>Imágenes desde tu Acer 🎨</h2><p>Stable Diffusion 1.5 + ComfyUI. Generación local, sin servicios externos de imágenes.</p></div>
-          <span class="images-stage">Integración web pendiente</span>
+          <span class="images-stage" id="images-stage" role="status">Comprobando motor…</span>
         </div>
         <div class="images-layout">
           <div class="images-controls">
@@ -82,13 +82,15 @@
               <button id="image-copy" type="button" class="secondary-button">Copiar descripción</button>
             </div>
             <p id="image-copy-status" class="images-copy-status" role="status" aria-live="polite"></p>
-            <p id="image-notice" class="images-notice"><strong>¡El motor local ya generó su primera imagen!</strong> Estoy preparando la conexión autenticada entre esta web y ComfyUI. Hasta que esté verificada, el botón Generar permanecerá deshabilitado. No se abre ComfyUI directamente a Internet.</p>
+            <p id="image-notice" class="images-notice">Comprobando si la Acer tiene instalada la conexión segura con ComfyUI. Si todavía falta, te lo voy a indicar acá. No se abre ComfyUI directamente a Internet.</p>
           </div>
           <div class="images-preview">
             <div class="images-preview-art" aria-hidden="true">✧</div>
             <strong>Tu próxima imagen aparecerá acá</strong>
             <p>Vas a poder verla y descargarla sin entrar a Debian, una vez conectada la API.</p>
-            <span class="images-preview-label">Sin imagen disponible en la web todavía</span>
+            <img id="image-preview" class="image-preview-result" alt="Imagen generada por Stable Diffusion en Acer" hidden>
+            <button id="image-download" class="secondary-button" type="button" hidden>Descargar PNG</button>
+            <span class="images-preview-label" id="image-result-status" role="status" aria-live="polite">Sin imagen disponible en la web todavía</span>
           </div>
         </div>
       </section>

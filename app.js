@@ -256,6 +256,7 @@ async function generateImage(){
         size:Number($("image-size").value),
         steps:Number($("image-steps").value),
         preset:$("image-preset").value,
+        interpretation:$("image-interpretation").value,
         sampler:$("image-sampler").value,
         cfg:Number($("image-cfg").value),
         seed:$("image-seed").value===""?null:Number($("image-seed").value)
@@ -267,7 +268,7 @@ async function generateImage(){
     if(Number.isInteger(job.seed)){
       imageLastSeed=job.seed;
       imageLastParams={
-        prompt:description,seed:job.seed,preset:$("image-preset").value,
+        prompt:description,seed:job.seed,preset:$("image-preset").value,interpretation:$("image-interpretation").value,
         sampler:job.sampler||$("image-sampler").value,
         cfg:job.cfg??Number($("image-cfg").value),
         steps:job.steps??Number($("image-steps").value),
@@ -335,6 +336,7 @@ $("image-repeat").addEventListener("click",()=>{
   const p=imageLastParams;
   $("image-prompt").value=p.prompt;
   $("image-preset").value=p.preset;
+  $("image-interpretation").value=p.interpretation||"balanced";
   $("image-size").value=String(p.size);
   $("image-steps").value=String(p.steps);
   $("image-sampler").value=p.sampler;
@@ -502,7 +504,7 @@ async function loadImageGallery(){
               imageLastSeed=data.seed;
               imageLastParams={
                 prompt:typeof data.prompt==="string"?data.prompt:$("image-prompt").value,
-                seed:data.seed,preset:"auto",
+                seed:data.seed,preset:"auto",interpretation:"balanced",
                 sampler:["euler","euler_ancestral","dpmpp_2m"].includes(data.sampler)?data.sampler:"dpmpp_2m",
                 cfg:Number.isFinite(data.cfg)?data.cfg:6.5,
                 steps:[8,15,20,28].includes(data.steps)?data.steps:20,

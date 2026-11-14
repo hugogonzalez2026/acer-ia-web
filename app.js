@@ -253,7 +253,8 @@ async function generateImage(){
       method:"POST",headers:{"Content-Type":"application/json",...apiHeaders()},
       body:JSON.stringify({
         prompt:description,
-        size:Number($("image-size").value),
+        negative_prompt: $("image-negative-prompt").value.trim(), // NUEVO
+        size:$("image-size").value, // MODIFICADO: Ahora envia el string "512x768" o "512"
         steps:Number($("image-steps").value),
         preset:$("image-preset").value,
         interpretation:$("image-interpretation").value,
@@ -272,11 +273,9 @@ async function generateImage(){
         sampler:job.sampler||$("image-sampler").value,
         cfg:job.cfg??Number($("image-cfg").value),
         steps:job.steps??Number($("image-steps").value),
-        size:Number($("image-size").value)
+        size:$("image-size").value // MODIFICADO: Guarda el string
       };
       $("image-last-settings").textContent="Modelo: "+(job.model||"SD 1.5")+" · Semilla utilizada: "+job.seed+" · "+(job.sampler||"sampler")+" · CFG "+(job.cfg??"")+" · "+(job.steps??"")+" pasos";
-      // No copiar la seed aleatoria en el campo: si sigue vacío, la próxima
-      // pulsación de Generar produce una imagen nueva.
     }
     $("image-result-status").textContent="Generando en la Acer…";
     imageProgressStage("Solicitud aceptada","Esperando confirmación de la cola de ComfyUI.");
@@ -490,9 +489,10 @@ async function loadImageGallery(){
           if(item.parameters&&typeof item.parameters==="object"){
             const data=item.parameters;
             if(typeof data.prompt==="string"&&data.prompt) $("image-prompt").value=data.prompt;
+            if(typeof data.negative_prompt==="string"&&data.negative_prompt) $("image-negative-prompt").value=data.negative_prompt;
             if(Number.isInteger(data.seed)) $("image-seed").value=String(data.seed);
             if([8,15,20,28].includes(data.steps)) $("image-steps").value=String(data.steps);
-            if([384,512].includes(data.width)) $("image-size").value=String(data.width);
+            if(["384","512","512x768"].includes(data.size)) $("image-size").value=data.size;
             if(["euler","euler_ancestral","dpmpp_2m"].includes(data.sampler)) $("image-sampler").value=data.sampler;
             if(Number.isFinite(data.cfg)) {
               const opts=Array.from($("image-cfg").options);
@@ -508,7 +508,7 @@ async function loadImageGallery(){
                 sampler:["euler","euler_ancestral","dpmpp_2m"].includes(data.sampler)?data.sampler:"dpmpp_2m",
                 cfg:Number.isFinite(data.cfg)?data.cfg:6.5,
                 steps:[8,15,20,28].includes(data.steps)?data.steps:20,
-                size:[384,512].includes(data.width)?data.width:512
+                size:["384","512","512x768"].includes(data.size)?data.size:"512"
               };
               $("image-repeat").disabled=false;
               $("image-variation").disabled=false;

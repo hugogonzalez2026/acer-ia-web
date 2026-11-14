@@ -73,9 +73,21 @@
         <div class="images-layout">
           <div class="images-controls">
             <label for="image-prompt">Describí la imagen</label>
-            <textarea id="image-prompt" rows="6" maxlength="1500" placeholder="Una noche de lluvia en San Telmo, adoquines mojados, faroles cálidos, fotografía cinematográfica…"></textarea>
+            <textarea id="image-prompt" rows="4" maxlength="1500" placeholder="Una noche de lluvia en San Telmo, adoquines mojados, faroles cálidos, fotografía cinematográfica…"></textarea>
+            
+            <!-- NUEVO: Prompt Negativo -->
+            <label for="image-negative-prompt" style="margin-top: 10px; display: block;">Prompt Negativo (lo que NO querés)</label>
+            <textarea id="image-negative-prompt" rows="2" maxlength="1000" placeholder="(worst quality, low quality:1.4), (deformed, bad anatomy, bad hands:1.3)"></textarea>
+
             <div class="images-settings">
-              <label for="image-size">Resolución<select id="image-size"><option value="384">384 × 384 · Borrador rápido</option><option value="512" selected>512 × 512 · Calidad estándar</option></select></label>
+              <!-- MODIFICADO: Se agregó la opción vertical -->
+              <label for="image-size">Resolución
+                <select id="image-size">
+                  <option value="384">384 × 384 · Borrador rápido</option>
+                  <option value="512" selected>512 × 512 · Cuadrado</option>
+                  <option value="512x768">512 × 768 · Vertical (Retratos)</option>
+                </select>
+              </label>
               <label for="image-steps">Pasos<select id="image-steps"><option value="8">8 · Borrador</option><option value="15">15 · Intermedio</option><option value="20" selected>20 · Recomendado</option><option value="28">28 · Máximo (lento)</option></select></label>
             </div>
             <div class="image-v2-options">

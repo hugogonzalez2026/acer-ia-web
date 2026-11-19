@@ -74,10 +74,7 @@
 
       <section class="wallet-holdings" id="wallet-holdings" aria-label="Mis tenencias cripto, solo lectura">
         <div class="wallet-holdings-head">
-          <div><div class="wallet-holdings-kicker">Cartera · Solo lectura</div>
-            <h2>Mi caja fuerte cripto</h2>
-            <p class="wallet-holdings-note">Saldos públicos de BTC, ETH, PAXG, USDT, USDC y SOL. Sin acceso para transferir.</p>
-          </div>
+          <div><h2>Billetera Hambrienta</h2></div>
           <button type="button" id="wallet-refresh" class="wallet-holdings-refresh" title="Actualizar tenencias" aria-label="Actualizar tenencias">↻</button>
         </div>
         <div class="wallet-holdings-summary">
@@ -249,24 +246,64 @@
         return await r.json();
       } finally { clearTimeout(timer); }
     }
+    function btcChecksumValid(address) {
+      const i=address.lastIndexOf('1'), charset='qpzry9x8gf2tvdw0s3jn54khce6mua7l';
+      if(i<2||address.length>90||address!==address.toLowerCase()||!address.startsWith('bc1'))return false;
+      const hrp=address.slice(0,i), data=address.slice(i+1);
+      if(data.length<6)return false;
+      let chk=1;
+      const vals=[...hrp].map(c=>c.charCodeAt(0)>>5).concat([0],[...hrp].map(c=>c.charCodeAt(0)&31),[...data].map(c=>charset.indexOf(c)));
+      if(vals.some(v=>v<0))return false;
+      for(const value of vals){
+        const top=chk>>>25;
+        chk=((chk&0x1ffffff)<<5)^value;
+        [0x3b6a57b2,0x26508e6d,0x1ea119fa,0x3d4233dd,0x2a1462b3].forEach((g,j)=>{if((top>>>j)&1)chk^=g;});
+      }
+      return chk===1;
+    }
     async function queryBTC() {
+      if(!btcChecksumValid(BTC_ADDRESS))throw Error('dirección de recepción mal copiada; verificar en Unstoppable');
       const a=await getJson('https://mempool.space/api/address/'+encodeURIComponent(BTC_ADDRESS));
-      if(!a.chain_stats) throw Error('respuesta BTC incompleta');
+      if(!a.chain_stats)throw Error('respuesta BTC incompleta');
       const c=a.chain_stats;
       balances.BTC=(Number(c.funded_txo_sum)-Number(c.spent_txo_sum))/1e8;
     }
-    async function queryETH() {
-      const root='https://eth.blockscout.com/api/v2/addresses/'+encodeURIComponent(ETH_ADDRESS);
-      const [a,t]=await Promise.all([getJson(root),getJson(root+'/token-balances')]);
-      if(!Array.isArray(t) || a.coin_balance==null) throw Error('respuesta Ethereum incompleta');
-      balances.ETH=Number(a.coin_balance)/1e18;
-      for(const [name,address] of Object.entries(TOKEN_CONTRACTS)) {
-        const v=t.find(x=>String(x.token&&x.token.address_hash||'').toLowerCase()===address);
-        if(!v){balances[name]=0;continue;}
-        const decimals=Number(v.token.decimals);
-        if(!Number.isInteger(decimals)||decimals<0||decimals>36) throw Error('decimales '+name+' inesperados');
-        balances[name]=Number(v.value)/Math.pow(10,decimals);
+    async function readEthViaRpc(){
+      const body=JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_getBalance',params:[ETH_ADDRESS,'latest']});
+      let last;
+      for(const rpc of ['https://ethereum-rpc.publicnode.com','https://eth.llamarpc.com']){
+        try {
+          const j=await getJson(rpc,{method:'POST',headers:{'Content-Type':'application/json'},body});
+          if(typeof j.result!=='string'||!/^0x[0-9a-f]+$/i.test(j.result))throw Error('RPC Ethereum incompleto');
+          return Number(BigInt(j.result))/1e18;
+        } catch(e){last=e;}
       }
+      throw last||Error('RPC Ethereum no disponible');
+    }
+    async function queryETH(){
+      const root='https://eth.blockscout.com/api/v2/addresses/'+encodeURIComponent(ETH_ADDRESS);
+      const [accountResult,tokensResult]=await Promise.allSettled([getJson(root),getJson(root+'/token-balances')]);
+      let problems=[];
+      if(tokensResult.status==='fulfilled'&&Array.isArray(tokensResult.value)){
+        const t=tokensResult.value;
+        for(const [name,address] of Object.entries(TOKEN_CONTRACTS)){
+          const v=t.find(x=>String(x.token&&x.token.address_hash||'').toLowerCase()===address);
+          if(!v){balances[name]=0;continue;}
+          const decimals=Number(v.token.decimals);
+          if(!Number.isInteger(decimals)||decimals<0||decimals>36){problems.push('decimales '+name);continue;}
+          balances[name]=Number(v.value)/Math.pow(10,decimals);
+        }
+      }else{problems.push('tokens ERC20 no disponibles');}
+      const a=accountResult.status==='fulfilled'?accountResult.value:null;
+      if(a&&a.coin_balance!=null&&String(a.coin_balance)!==''){
+        const q=Number(a.coin_balance)/1e18;
+        if(Number.isFinite(q))balances.ETH=q;
+      }
+      if(balances.ETH===undefined){
+        try{balances.ETH=await readEthViaRpc();}
+        catch(e){problems.push('saldo ETH no verificable');}
+      }
+      if(problems.length)throw Error(problems.join(', '));
     }
     async function querySOL() {
       const rpcBody=JSON.stringify({jsonrpc:'2.0',id:1,method:'getBalance',params:[SOL_ADDRESS,{commitment:'confirmed'}]});
@@ -308,9 +345,9 @@
         if(goodBal&&goodPrice){total+=bal*price;count++}else{missing.push(name);}
         tbody.append(row);
       }
-      $('wallet-total').textContent=count?dollars.format(total)+(count<COINS.length?' (parcial)':''):'USD —';
+      $('wallet-total').textContent=!count||count<COINS.length&&total===0?'USD — (incompleto)':dollars.format(total)+(count<COINS.length?' (parcial)':'');
       $('wallet-time').textContent='Consulta: '+new Date().toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'});
-      const note=failures.length?'No se pudo actualizar todo: '+failures.join(' · '):'';
+      const note=failures.length?'Consulta incompleta: '+failures.join(' · '):'';
       $('wallet-status').textContent=note || (missing.length?'Consulta parcial, faltan datos: '+missing.join(', '):'Saldos y precios consultados. Valuación orientativa.');
       $('wallet-status').style.color=failures.length||missing.length?'#a15d31':'#53776b';
     }

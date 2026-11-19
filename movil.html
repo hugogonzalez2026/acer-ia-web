@@ -8,6 +8,32 @@
   <title>Acer IA · Laboratorio</title>
   <link rel="stylesheet" href="./style.css?v=interpretation3">
   <script src="./app.js?v=interpretation3" defer></script>
+
+  <style id="wallet-holdings-style">
+    .wallet-holdings{margin:15px 0 18px;padding:17px 20px;border:1px solid #dce5dd;border-radius:17px;background:#fff;color:#163d35}
+    .wallet-holdings *{box-sizing:border-box}
+    .wallet-holdings-head{display:flex;gap:14px;align-items:flex-start;justify-content:space-between}
+    .wallet-holdings-kicker{font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#5c8176}
+    .wallet-holdings h2{font-family:inherit;font-size:17px;margin:5px 0 4px;color:#0e3933}
+    .wallet-holdings-note,.wallet-holdings-foot{font-size:12px;line-height:1.5;color:#60736c;margin:0}
+    .wallet-holdings-refresh{border:1px solid #d7e2db;border-radius:10px;background:#f8fbf9;color:#17483e;font-size:20px;line-height:1;padding:9px 12px;cursor:pointer}
+    .wallet-holdings-refresh:disabled{opacity:.55;cursor:progress}
+    .wallet-holdings-summary{display:flex;justify-content:space-between;gap:16px;align-items:center;border-top:1px solid #e4ebe5;border-bottom:1px solid #e4ebe5;margin:15px 0 8px;padding:13px 0}
+    .wallet-holdings-summary small{display:block;color:#708179;font-size:11px;margin-bottom:3px}
+    .wallet-holdings-total{font-weight:800;font-size:clamp(19px,3.1vw,26px);letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+    .wallet-holdings-time{font-size:12px;text-align:right;color:#668176}
+    .wallet-holdings-status{font-size:12px;line-height:1.5;color:#63766e;margin:9px 0}
+    .wallet-holdings-scroll{overflow-x:auto}
+    .wallet-holdings-table{width:100%;border-collapse:collapse;font-size:13px;min-width:510px}
+    .wallet-holdings-table th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#677b70;font-weight:700;padding:10px 9px;border-bottom:1px solid #e5ede6}
+    .wallet-holdings-table td{padding:11px 9px;border-bottom:1px solid #ecf0ec;color:#193e37;font-variant-numeric:tabular-nums}
+    .wallet-holdings-table th:not(:first-child),.wallet-holdings-table td:not(:first-child){text-align:right}
+    .wallet-holdings-table td:first-child strong{display:block}
+    .wallet-holdings-table td:first-child small{display:block;color:#82938b;font-size:10px;margin-top:2px}
+    .wallet-holdings-table td:last-child{font-weight:750}
+    .wallet-holdings-foot{margin-top:12px}
+    @media(max-width:570px){.wallet-holdings{padding:15px 13px}.wallet-holdings-summary{align-items:flex-start}.wallet-holdings-time{max-width:125px}}
+  </style>
 </head>
 <body>
   <div class="app-shell">
@@ -44,6 +70,28 @@
         <div class="market-title"><span>Referencias cripto</span><span id="price-time">Conectando…</span></div>
         <div class="market-prices"><div><span>BTC / USD</span><strong id="btc-price">—</strong></div><div><span>ETH / USD</span><strong id="eth-price">—</strong></div><button class="refresh" id="refresh-prices" title="Actualizar cotizaciones" aria-label="Actualizar cotizaciones">↻</button></div>
         <div class="source">Fuente: <a href="https://www.kraken.com/prices" target="_blank" rel="noopener noreferrer">Kraken</a> · Precios puntuales, no una recomendación de inversión.</div>
+      </section>
+
+      <section class="wallet-holdings" id="wallet-holdings" aria-label="Mis tenencias cripto, solo lectura">
+        <div class="wallet-holdings-head">
+          <div><div class="wallet-holdings-kicker">Cartera · Solo lectura</div>
+            <h2>Mi caja fuerte cripto</h2>
+            <p class="wallet-holdings-note">Saldos públicos de BTC, ETH, PAXG, USDT, USDC y SOL. Sin acceso para transferir.</p>
+          </div>
+          <button type="button" id="wallet-refresh" class="wallet-holdings-refresh" title="Actualizar tenencias" aria-label="Actualizar tenencias">↻</button>
+        </div>
+        <div class="wallet-holdings-summary">
+          <div><small>Valuación total estimada</small><div id="wallet-total" class="wallet-holdings-total">USD —</div></div>
+          <div class="wallet-holdings-time" id="wallet-time">Sin consultar</div>
+        </div>
+        <p class="wallet-holdings-status" id="wallet-status" role="status" aria-live="polite">Preparando consulta…</p>
+        <div class="wallet-holdings-scroll">
+          <table class="wallet-holdings-table">
+            <thead><tr><th>Activo</th><th>Tenencia</th><th>Precio USD</th><th>Valor USD</th></tr></thead>
+            <tbody id="wallet-rows"><tr><td colspan="4">Consultando las redes…</td></tr></tbody>
+          </table>
+        </div>
+        <p class="wallet-holdings-foot">Bitcoin: se monitorea la dirección BIP84 indicada, no todas las futuras direcciones de esa cuenta. Los valores pueden ser parciales si alguna API falla. Fuentes: mempool.space, Blockscout, RPC Solana y CoinGecko.</p>
       </section>
       <section id="code-panel" class="code-panel" hidden aria-label="Espacio de programación">
         <div class="code-intro"><strong>Laboratorio de código</strong><p>Pedile a la IA que programe. Podés revisar, copiar y descargar el resultado, sin ejecutar nada en Debian.</p></div>
@@ -167,5 +215,123 @@
       <footer>100 % análisis · 0 permisos de trading · IA ejecutándose en la Acer · <button class="logout-button" id="logout">Desconectar</button></footer>
     </main>
   </div>
+
+  <script id="wallet-holdings-script">
+  (function () {
+    'use strict';
+    const BTC_ADDRESS = 'bc1q7p870j5d4fxa6cymnl5nv9jeq3tkhd9r0rn2xc';
+    const ETH_ADDRESS = '0x8F203A1A0807de93049c949401399eC044673448';
+    const SOL_ADDRESS = '9jGSAYMqwJiuaVhSS3JXodbw2kLKSSQbsLfawPakxdVY';
+    const TOKEN_CONTRACTS = {
+      PAXG:'0x45804880de22913dafe09f4980848ece6ecbaf78',
+      USDT:'0xdac17f958d2ee523a2206206994597c13d831ec7',
+      USDC:'0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
+    };
+    const COINS = [
+      ['BTC','Bitcoin · BIP84','bitcoin'],
+      ['ETH','Ethereum','ethereum'],
+      ['PAXG','Ethereum · ERC20','pax-gold'],
+      ['USDT','Ethereum · ERC20','tether'],
+      ['USDC','Ethereum · ERC20','usd-coin'],
+      ['SOL','Solana','solana']
+    ];
+    const $ = id => document.getElementById(id);
+    const quantity = new Intl.NumberFormat('es-AR',{maximumFractionDigits:8});
+    const dollars = new Intl.NumberFormat('es-AR',{style:'currency',currency:'USD',maximumFractionDigits:2});
+    const balances = {}; const prices = {}; const failures = [];
+    let busy=false;
+    async function getJson(url,opts) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(()=>ctrl.abort(),12000);
+      try {
+        const r = await fetch(url,Object.assign({cache:'no-store',signal:ctrl.signal},opts||{}));
+        if (!r.ok) throw Error('HTTP '+r.status);
+        return await r.json();
+      } finally { clearTimeout(timer); }
+    }
+    async function queryBTC() {
+      const a=await getJson('https://mempool.space/api/address/'+encodeURIComponent(BTC_ADDRESS));
+      if(!a.chain_stats) throw Error('respuesta BTC incompleta');
+      const c=a.chain_stats;
+      balances.BTC=(Number(c.funded_txo_sum)-Number(c.spent_txo_sum))/1e8;
+    }
+    async function queryETH() {
+      const root='https://eth.blockscout.com/api/v2/addresses/'+encodeURIComponent(ETH_ADDRESS);
+      const [a,t]=await Promise.all([getJson(root),getJson(root+'/token-balances')]);
+      if(!Array.isArray(t) || a.coin_balance==null) throw Error('respuesta Ethereum incompleta');
+      balances.ETH=Number(a.coin_balance)/1e18;
+      for(const [name,address] of Object.entries(TOKEN_CONTRACTS)) {
+        const v=t.find(x=>String(x.token&&x.token.address_hash||'').toLowerCase()===address);
+        if(!v){balances[name]=0;continue;}
+        const decimals=Number(v.token.decimals);
+        if(!Number.isInteger(decimals)||decimals<0||decimals>36) throw Error('decimales '+name+' inesperados');
+        balances[name]=Number(v.value)/Math.pow(10,decimals);
+      }
+    }
+    async function querySOL() {
+      const rpcBody=JSON.stringify({jsonrpc:'2.0',id:1,method:'getBalance',params:[SOL_ADDRESS,{commitment:'confirmed'}]});
+      const endpoints=['https://api.mainnet-beta.solana.com','https://solana-rpc.publicnode.com'];
+      let last;
+      for(const url of endpoints) {
+        try {
+          const j=await getJson(url,{method:'POST',headers:{'Content-Type':'application/json'},body:rpcBody});
+          if(j.error || !Number.isFinite(j.result&&j.result.value)) throw Error('respuesta Solana incompleta');
+          balances.SOL=Number(j.result.value)/1e9;
+          return;
+        } catch(e){last=e;}
+      }
+      throw last||Error('RPC Solana no disponible');
+    }
+    async function queryPrices() {
+      const ids=COINS.map(x=>x[2]).join(',');
+      const p=await getJson('https://api.coingecko.com/api/v3/simple/price?ids='+encodeURIComponent(ids)+'&vs_currencies=usd');
+      for(const [name,,id] of COINS) {
+        const value=Number(p[id]&&p[id].usd);
+        if(Number.isFinite(value)&&value>0) prices[name]=value;
+      }
+      if(Object.keys(prices).length!==COINS.length) throw Error('faltan precios');
+    }
+    function buildRows() {
+      const tbody=$('wallet-rows'); tbody.textContent='';
+      let total=0;let count=0;let missing=[];
+      for (const [name,network] of COINS) {
+        const bal=balances[name]; const price=prices[name];
+        const goodBal=Number.isFinite(bal)&&bal>=0;
+        const goodPrice=Number.isFinite(price)&&price>0;
+        const row=document.createElement('tr');
+        const a=document.createElement('td');const title=document.createElement('strong');
+        title.textContent=name;
+        const sub=document.createElement('small');sub.textContent=network;a.append(title,sub);row.append(a);
+        const c=document.createElement('td');c.textContent=goodBal?quantity.format(bal):'—';row.append(c);
+        const p=document.createElement('td');p.textContent=goodPrice?dollars.format(price):'—';row.append(p);
+        const v=document.createElement('td');v.textContent=goodBal&&goodPrice?dollars.format(bal*price):'—';row.append(v);
+        if(goodBal&&goodPrice){total+=bal*price;count++}else{missing.push(name);}
+        tbody.append(row);
+      }
+      $('wallet-total').textContent=count?dollars.format(total)+(count<COINS.length?' (parcial)':''):'USD —';
+      $('wallet-time').textContent='Consulta: '+new Date().toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'});
+      const note=failures.length?'No se pudo actualizar todo: '+failures.join(' · '):'';
+      $('wallet-status').textContent=note || (missing.length?'Consulta parcial, faltan datos: '+missing.join(', '):'Saldos y precios consultados. Valuación orientativa.');
+      $('wallet-status').style.color=failures.length||missing.length?'#a15d31':'#53776b';
+    }
+    async function refresh() {
+      if(busy) return;
+      busy=true; $('wallet-refresh').disabled=true;
+      $('wallet-status').textContent='Consultando blockchains y cotizaciones…';
+      failures.length=0;
+      for(const k of Object.keys(balances)) delete balances[k];
+      for(const k of Object.keys(prices)) delete prices[k];
+      await Promise.all([
+        queryBTC().catch(e=>failures.push('BTC ('+e.message+')')),
+        queryETH().catch(e=>failures.push('Ethereum ('+e.message+')')),
+        querySOL().catch(e=>failures.push('Solana ('+e.message+')')),
+        queryPrices().catch(e=>failures.push('precios ('+e.message+')'))
+      ]);
+      buildRows(); $('wallet-refresh').disabled=false;busy=false;
+    }
+    $('wallet-refresh').addEventListener('click',refresh);
+    refresh();
+  })();
+  </script>
 </body>
 </html>
